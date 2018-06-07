@@ -17,7 +17,7 @@ const int machine_size = 512;
 int l = 1; // line number
 int o = 1; // line offset
 int len = 0; // length of the token
-char c, pc = '\0';
+char c = '\0', pc = '\0';
 int num_sym = 0; // number of symbols
 int num_ins = 0; // number of instructions
 int module = 0; // current module
@@ -26,6 +26,7 @@ vector<int> module_ins; // ins per module
 int offset = 0;
 int word_count = 0; // number of the word
 std::ifstream ifs; // the input file
+vector<vector<pair<string, bool>>> use_lists;
 
 class Symbol {
 public:
@@ -37,6 +38,7 @@ public:
     int value; // final address
     int error; // error code
     bool used = false;
+
     Symbol(string n, int ln, int lo, int m, int o, int v, int e = 100) {
         name = n;
         line_num = ln;
@@ -75,7 +77,6 @@ public:
         error = e;
     }
 };
-
 
 void print_ins(Instruction &s) {
     cout << s.operation << "\t" << s.type << "\t"
@@ -190,18 +191,18 @@ string warnings(int e, string message = "") {
     std::ostringstream out;
     switch (e) {
         case 1 :
-            s = "Error: Relative address exceeds module size; zero used";
+            s = "Error: Absolute address exceeds machine size; zero used";
             break;
         case 2 :
-            s = "Error: External address exceeds length of uselist; treated as immediate";
+            s = "Error: Relative address exceeds module size; zero used";
             break;
         case 3 :
+            s = "Error: External address exceeds length of uselist; treated as immediate";
+            break;
+        case 4 :
 //            s = "Error: %s is not defined; zero used";
             out << "Error:" << message << " is not defined; zero used";
             s = out.str();
-            break;
-        case 4 :
-            s = "Error: This variable is multiple times defined; first value used";
             break;
         case 5 :
             s = "Error: Illegal immediate value; treated as 9999";
@@ -271,7 +272,7 @@ void read_def(int &def_count) {
     }
 }
 
-vector<string> read_use() {
+vector<pair<string, bool>> read_use() {
     string token;
     int error;
     int use_count;
@@ -285,7 +286,7 @@ vector<string> read_use() {
             use_count = stoi(token);
     }
     // read the value pairs
-    vector<string> use_list;
+    vector<pair<string, bool>> use_list;
     for (int i = 0; i < use_count; ++i) {
         token = read_token();
         // expected a symbol
@@ -295,13 +296,13 @@ vector<string> read_use() {
         if (error != 100)
             __parseerror(error, l, o - len + 1);
         // add this to the module use list
-        use_list.push_back(token);
+        use_list.push_back(make_pair(token, false));
     }
     // return use list
     return use_list;
 }
 
-void read_ins(vector<string> use_list) {
+void read_ins(vector<pair<string, bool>> use_list) {
     string token;
     int error;
     int ins_count;
@@ -341,15 +342,17 @@ void read_ins(vector<string> use_list) {
             operation = stoi(t2);
         if (t1 == "E") {
             // error 3
-            if (operation % 1000 > use_list.size())
+            if (operation % 1000 >= use_list.size())
                 instructs.push_back(Instruction(operation, "I", "NULL", l, o - len + 1, module, -1, 3));
             else {
-                string ref = use_list[operation % 1000];
+                string ref = use_list[operation % 1000].first;
+                use_list[operation % 1000].second = true;
                 instructs.push_back(Instruction(operation, t1, ref, l, o - len + 1, module, -1));
             }
         } else
             instructs.push_back(Instruction(operation, t1, "NULL", l, o - len + 1, module, -1));
     }
+    use_lists.push_back(use_list);
 }
 
 void test_single_module(string &file_name) {
@@ -365,7 +368,7 @@ void test_single_module(string &file_name) {
         print_symbol(symbol);
     }
     // read the use list
-    vector<string> use_list = read_use();
+    vector<pair<string, bool>> use_list = read_use();
     // read the instructions
     read_ins(use_list);
     for (auto &ins : instructs) {
@@ -375,7 +378,7 @@ void test_single_module(string &file_name) {
     l = 1; // line number
     o = 1; // line offset
     len = 0; // length of the token
-    c, pc = '\0';
+    c = '\0', pc = '\0';
 }
 
 void fprint_ins(int &count, Instruction &ins) {
@@ -395,31 +398,8 @@ int main(int argc, char *argv[]) {
         cout << "Usage lab01.exe input" << endl;
         exit(0);
     }
-//    string file_name = "lab1samples/input-2";
     string file_name = argv[1];
     string token;
-    // this can test read_token
-    if (IFDEBUG) {
-        ifs.open(file_name);
-        if (!ifs) {
-            cout << "Cannot open file.\n";
-            return 1;
-        }
-        while (ifs.good()) {
-            token = read_token();
-            if (token != "NULL")
-                if (IFDEBUG) cout << token << " line :" << l << " offset :" << o - len + 1 << endl;
-        }
-        ifs.close();
-        l = 1; // line number
-        o = 1; // line offset
-        len = 0; // length of the token
-        c, pc = '\0';
-    }
-    // this test reading a single module
-    if (IFDEBUG) {
-        test_single_module(file_name);
-    }
 
     // pass 1
     ifs.open(file_name);
@@ -433,7 +413,7 @@ int main(int argc, char *argv[]) {
         // read the definition list
         read_def(def_count);
         // read the use list
-        vector<string> use_list = read_use();
+        vector<pair<string, bool>> use_list = read_use();
         // read the instructions
         read_ins(use_list);
     }
@@ -450,10 +430,6 @@ int main(int argc, char *argv[]) {
             symbol.value = 0;
         } else
             symbol.value = symbol.original + module_offset[symbol.module - 1];
-        if (IFDEBUG) print_symbol(symbol);
-    }
-    for (auto &elem : symbol_map) {
-        if (IFDEBUG) std::cout << elem.first << "\t" << elem.second << "\t" << "\n";
     }
     for (auto &ins : instructs) {
         if (ins.type == "I") {
@@ -486,27 +462,52 @@ int main(int argc, char *argv[]) {
             if (symbol_map.find(ins.ref) == symbol_map.end()) {
                 ins.error = 4;
                 ins.value = ins.operation / 1000 * 1000;
-            } else
+            } else {
                 ins.value = ins.operation / 1000 * 1000 + symbols[symbol_map[ins.ref]].value;
+                symbols[symbol_map[ins.ref]].used = true;
+            }
         }
         if (ins.value > 9999) {
             ins.error = 6;
             ins.value = 9999;
         }
-        if (IFDEBUG) print_ins(ins);
     }
 
     // print them in required format
+    // print symbol table
     cout << "Symbol Table" << endl;
     for (auto &symbol : symbols) {
         cout << symbol.name << "=" << symbol.value << " " << warnings(symbol.error) << endl;
     }
+
+    // print memory map
     cout << endl << "Memory Map" << endl;
-    int count = 0;
+    int count = 0, mod = 0;
     for (auto &ins : instructs) {
         fprint_ins(count, ins);
         count++;
+        if (count == module_offset[mod + 1]) {
+            for (auto &p : use_lists[mod]) {
+                if (!p.second)
+                    printf("Warning: Module %d: %s appeared in the uselist but was not actually used\n", mod + 1,
+                           p.first.c_str());
+            }
+            mod++;
+        }
     }
+
+    // error 9
+    printf("\n");
+//    bool if_used = false;
+    for (auto &symbol : symbols) {
+        if (!symbol.used) {
+            printf("Warning: Module %d: %s was defined but never used\n", symbol.module,
+                   symbol.name.c_str());
+//            if_used = true;
+        }
+    }
+//    if (if_used) printf("\n");
+
     ifs.close();
     return 0;
 }
