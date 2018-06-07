@@ -7,11 +7,13 @@
 #include <vector>
 #include <unordered_map>
 #include <regex>
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 
 bool IFDEBUG = false;
-const int word_limit = 512;
+const int machine_size = 512;
 int l = 1; // line number
 int o = 1; // line offset
 int len = 0; // length of the token
@@ -20,7 +22,8 @@ int num_sym = 0; // number of symbols
 int num_ins = 0; // number of instructions
 int module = 0; // current module
 vector<int> module_offset = {0}; // offset per module
-        int offset = 0;
+vector<int> module_ins; // ins per module
+int offset = 0;
 int word_count = 0; // number of the word
 std::ifstream ifs; // the input file
 
@@ -32,13 +35,16 @@ public:
     int module; // module number
     int original; // original address
     int value; // final address
-    Symbol(string n, int ln, int lo, int m, int o, int v) {
+    int error; // error code
+    bool used = false;
+    Symbol(string n, int ln, int lo, int m, int o, int v, int e = 100) {
         name = n;
         line_num = ln;
         line_off = lo;
         module = m;
         original = o;
         value = v;
+        error = e;
     }
 };
 
@@ -57,7 +63,8 @@ public:
     int line_off;
     int module; // module number
     int value; // final address
-    Instruction(int o, string t, string r, int ln, int lo, int m, int v) {
+    int error; // error code
+    Instruction(int o, string t, string r, int ln, int lo, int m, int v, int e = 100) {
         operation = o;
         type = t;
         ref = r;
@@ -65,6 +72,7 @@ public:
         line_off = lo;
         module = m;
         value = v;
+        error = e;
     }
 };
 
@@ -115,7 +123,7 @@ int if_number(string &s) {
     int error = 100;
     string message = "NULL";
     try {
-        std::regex e("[0-9]{1,4}", std::regex::ECMAScript);
+        std::regex e("[0-9]*", std::regex::ECMAScript);
         if (!regex_match(s, e)) error = 0;
     }
     catch (const std::regex_error &e) {
@@ -153,11 +161,11 @@ string read_token() {
         }
     }
     if (c == -1) {
-        cout << "must be end of file, line " << l << endl;
+//        cout << "must be end of file, line " << l << endl;
         return "EOF";
     }
     if (token.empty()) {
-        cout << "must be end of file, line " << l << endl;
+//        cout << "must be end of file, line " << l << endl;
         return "NULL";
     }
     cout << "case not handle : " << token << " line :" << l << " offset :" << o - len + 1 << endl;
@@ -175,6 +183,40 @@ void __parseerror(int errcode, int linenum, int lineoffset) {
             "TOO_MANY_INSTR", // total num_instr exceeds memory size (512), 6
     };
     printf("Parse Error line %d offset %d: %s\n", linenum, lineoffset, errstr[errcode]);
+}
+
+string warnings(int e, string message = "") {
+    string s;
+    std::ostringstream out;
+    switch (e) {
+        case 1 :
+            s = "Error: Relative address exceeds module size; zero used";
+            break;
+        case 2 :
+            s = "Error: External address exceeds length of uselist; treated as immediate";
+            break;
+        case 3 :
+//            s = "Error: %s is not defined; zero used";
+            out << "Error:" << message << " is not defined; zero used";
+            s = out.str();
+            break;
+        case 4 :
+            s = "Error: This variable is multiple times defined; first value used";
+            break;
+        case 5 :
+            s = "Error: Illegal immediate value; treated as 9999";
+            break;
+        case 6 :
+            s = "Error: Illegal opcode; treated as 9999";
+            break;
+        case 7 :
+            s = "Error: This variable is multiple times defined; first value used";
+            break;
+        default:
+            s = "";
+            break;
+    }
+    return s;
 }
 
 bool if_more_module(int &def_count) {
@@ -209,9 +251,6 @@ void read_def(int &def_count) {
         error = if_symbol(t1);
         if (error != 100)
             __parseerror(error, l, o - len + 1);
-            // add to the dict if the symbol has not been seen
-        else if (symbol_map.find(t1) == symbol_map.end())
-            symbol_map[t1] = num_sym++;
         t2 = read_token();
         // expected a number
         if (t2 == "NULL")
@@ -221,7 +260,14 @@ void read_def(int &def_count) {
             __parseerror(error, l, o - len + 1);
         else
             value = stoi(t2);
-        symbols.push_back(Symbol(t1, l, o - len + 1, module, value, -1));
+        // add to the dict if the symbol has not been seen
+        // else defined multiple times
+        if (symbol_map.find(t1) == symbol_map.end()) {
+            symbol_map[t1] = num_sym++;
+            symbols.push_back(Symbol(t1, l, o - len + 1, module, value, -1));
+        } else
+            // error 7
+            symbols[symbol_map[t1]].error = 7;
     }
 }
 
@@ -270,6 +316,7 @@ void read_ins(vector<string> use_list) {
     }
     offset += ins_count;
     module_offset.push_back(offset);
+    module_ins.push_back(ins_count);
     // read the instruction pairs
     string t1, t2;
     int operation = -1;
@@ -293,8 +340,13 @@ void read_ins(vector<string> use_list) {
         else
             operation = stoi(t2);
         if (t1 == "E") {
-            string ref = use_list[operation % 1000];
-            instructs.push_back(Instruction(operation, t1, ref, l, o - len + 1, module, -1));
+            // error 3
+            if (operation % 1000 > use_list.size())
+                instructs.push_back(Instruction(operation, "I", "NULL", l, o - len + 1, module, -1, 3));
+            else {
+                string ref = use_list[operation % 1000];
+                instructs.push_back(Instruction(operation, t1, ref, l, o - len + 1, module, -1));
+            }
         } else
             instructs.push_back(Instruction(operation, t1, "NULL", l, o - len + 1, module, -1));
     }
@@ -326,10 +378,25 @@ void test_single_module(string &file_name) {
     c, pc = '\0';
 }
 
+void fprint_ins(int &count, Instruction &ins) {
+//    if (count < 10)
+//        cout << "00" << count << ": " << ins.value << " " << warnings(ins.error, ins.ref) << endl;
+//    else if (count < 100)
+//        cout << "0" << count << ": " << ins.value << " " << warnings(ins.error, ins.ref) << endl;
+//    else
+//        cout << count << ": " << ins.value << " " << warnings(ins.error, ins.ref) << endl;
+    // 这个写法超棒
+    cout << std::setw(3) << std::setfill('0') << count << ": " << std::setw(4) << std::setfill('0') << ins.value << " "
+         << warnings(ins.error, ins.ref) << endl;
+}
 
-// driver code
-int main() {
-    string file_name = "lab1samples/input-2";
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        cout << "Usage lab01.exe input" << endl;
+        exit(0);
+    }
+//    string file_name = "lab1samples/input-2";
+    string file_name = argv[1];
     string token;
     // this can test read_token
     if (IFDEBUG) {
@@ -370,24 +437,75 @@ int main() {
         // read the instructions
         read_ins(use_list);
     }
+
     // pass 2
     // print them after all
     for (auto &symbol : symbols) {
-        symbol.value = symbol.original + module_offset[symbol.module - 1];
-        print_symbol(symbol);
+        // error 8
+        if (symbol.original > module_ins[symbol.module - 1]) {
+            printf("Warning: Module %d: %s too big %d (max=%d) assume zero relative\n", symbol.module,
+                   symbol.name.c_str(),
+                   symbol.original, module_ins[symbol.module - 1]);
+            symbol.error = 8;
+            symbol.value = 0;
+        } else
+            symbol.value = symbol.original + module_offset[symbol.module - 1];
+        if (IFDEBUG) print_symbol(symbol);
     }
-    for(auto &elem : symbol_map) {
-        std::cout << elem.first << "\t" << elem.second << "\t" << "\n";
+    for (auto &elem : symbol_map) {
+        if (IFDEBUG) std::cout << elem.first << "\t" << elem.second << "\t" << "\n";
     }
     for (auto &ins : instructs) {
-        if (ins.type == "I" | ins.type == "A")
-            ins.value = ins.operation;
-        else
-            if (ins.type == "R")
+        if (ins.type == "I") {
+            // error 5
+            if (ins.operation > 9999) {
+                ins.error = 5;
+                ins.value = 9999;
+            } else
+                ins.value = ins.operation;
+        }
+        if (ins.type == "A") {
+            // error 1
+            if (ins.operation % 1000 >= machine_size) {
+                ins.error = 1;
+                ins.value = ins.operation / 1000 * 1000;
+            } else
+                ins.value = ins.operation;
+        }
+        if (ins.type == "R") {
+            // error 2
+            if (ins.operation % 1000 > module_ins[ins.module - 1]) {
+                ins.error = 2;
+                ins.value = ins.operation / 1000 * 1000 + module_offset[ins.module - 1];
+            } else
                 ins.value = ins.operation + module_offset[ins.module - 1];
-            else
+        }
+        if (ins.type == "E") {
+            // error 4
+            // symbol is never defined
+            if (symbol_map.find(ins.ref) == symbol_map.end()) {
+                ins.error = 4;
+                ins.value = ins.operation / 1000 * 1000;
+            } else
                 ins.value = ins.operation / 1000 * 1000 + symbols[symbol_map[ins.ref]].value;
-        print_ins(ins);
+        }
+        if (ins.value > 9999) {
+            ins.error = 6;
+            ins.value = 9999;
+        }
+        if (IFDEBUG) print_ins(ins);
+    }
+
+    // print them in required format
+    cout << "Symbol Table" << endl;
+    for (auto &symbol : symbols) {
+        cout << symbol.name << "=" << symbol.value << " " << warnings(symbol.error) << endl;
+    }
+    cout << endl << "Memory Map" << endl;
+    int count = 0;
+    for (auto &ins : instructs) {
+        fprint_ins(count, ins);
+        count++;
     }
     ifs.close();
     return 0;
