@@ -9,13 +9,15 @@
 #include <regex>
 #include <sstream>
 #include <iomanip>
+#include <stdlib.h>
+#include <stdio.h>
 
 using namespace std;
 
 bool IFDEBUG = false;
 const int machine_size = 512;
 int l = 1; // line number
-int o = 1; // line offset
+int o = 0; // line offset
 int len = 0; // length of the token
 char c = '\0', pc = '\0';
 int num_sym = 0; // number of symbols
@@ -78,6 +80,7 @@ public:
     }
 };
 
+// TODO: this could actually be accomadated in the class definition
 void print_ins(Instruction &s) {
     cout << s.operation << "\t" << s.type << "\t"
          << s.ref << "\t" << s.module << "\t"
@@ -96,14 +99,18 @@ bool is_space(char ch) {
 int if_symbol(string &s) {
     int error = 100;
     string message = "NULL";
-    if (s.length() > 16) error = 3;
+    if (s == "EOF") return 1;
     try {
+        // parse error 1
         std::regex e("[a-zA-Z][a-zA-Z0-9]*", std::regex::ECMAScript);
         if (!regex_match(s, e)) error = 1;
     }
     catch (const std::regex_error &e) {
-        std::cout << "regex_error caught: " << e.what() << '\n';
+//        std::cout << "regex_error caught: " << e.what() << '\n';
+        error = 1;
     }
+    // parse error 3
+    if (s.length() > 16) error = 3;
     return error;
 }
 
@@ -111,11 +118,13 @@ int if_address(string &s) {
     int error = 100;
     string message = "NULL";
     try {
+        // parse error 2
         std::regex e("[IEAR]", std::regex::ECMAScript);
         if (!regex_match(s, e)) error = 2;
     }
     catch (const std::regex_error &e) {
-        std::cout << "regex_error caught: " << e.what() << '\n';
+//        std::cout << "regex_error caught: " << e.what() << '\n';
+        error = 2;
     }
     return error;
 }
@@ -124,11 +133,13 @@ int if_number(string &s) {
     int error = 100;
     string message = "NULL";
     try {
+        // parse error 0
         std::regex e("[0-9]*", std::regex::ECMAScript);
         if (!regex_match(s, e)) error = 0;
     }
     catch (const std::regex_error &e) {
         std::cout << "regex_error caught: " << e.what() << '\n';
+        error = 0;
     }
     return error;
 }
@@ -141,18 +152,20 @@ string read_token() {
     while (ifs.good()) {
         pc = c;
         c = ifs.get();
-        o++;
+        if (c != -1) o++;
         // a newline
-        if (pc == '\n' | pc == 'r') {
+        if ((pc == '\n' | pc == 'r') && c != -1) {
             l++;
-            o = 0;
+            o = 1;
         }
-        if (!is_space(c)) {
+        // read a nonspace value
+        if (!is_space(c) && c != -1) {
             // start a token
             if (pc == '\0' | is_space(pc)) len = 1;
             // continue reading
             if (pc != '\0' && !is_space(pc)) len++;
             token += c;
+            // eof of space
         } else {
             // a token is finished
             if (!is_space(pc) && pc != '\0') {
@@ -169,7 +182,7 @@ string read_token() {
 //        cout << "must be end of file, line " << l << endl;
         return "NULL";
     }
-    cout << "case not handle : " << token << " line :" << l << " offset :" << o - len + 1 << endl;
+    cout << "case not handle : " << token << " line :" << l << " offset :" << o - len << endl;
     return "NULL";
 }
 
@@ -184,6 +197,7 @@ void __parseerror(int errcode, int linenum, int lineoffset) {
             "TOO_MANY_INSTR", // total num_instr exceeds memory size (512), 6
     };
     printf("Parse Error line %d offset %d: %s\n", linenum, lineoffset, errstr[errcode]);
+    exit(1);
 }
 
 string warnings(int e, string message = "") {
@@ -201,7 +215,7 @@ string warnings(int e, string message = "") {
             break;
         case 4 :
 //            s = "Error: %s is not defined; zero used";
-            out << "Error:" << message << " is not defined; zero used";
+            out << "Error: " << message << " is not defined; zero used";
             s = out.str();
             break;
         case 5 :
@@ -230,10 +244,23 @@ bool if_more_module(int &def_count) {
             return false;
         error = if_number(token);
         if (error != 100) {
-            __parseerror(error, l, o - len + 1);
+            __parseerror(error, l, o - len);
+            exit(1);
             return false;
         } else {
-            def_count = stoi(token);
+            try {
+                def_count = stoi(token);
+            }
+            catch (std::invalid_argument &e) {
+                cout << "Invalid token: " << token << endl;
+                cout << "error code: " << error << endl;
+            };
+
+            // parse error 4
+            if (def_count > 16) {
+                __parseerror(4, l, o - len);
+                exit(1);
+            }
             return true;
         }
     }
@@ -247,25 +274,38 @@ void read_def(int &def_count) {
     for (int i = 0; i < def_count; ++i) {
         t1 = read_token();
         // expected a symbol
-        if (t1 == "NULL")
-            __parseerror(1, l, o - len + 1);
+        if (t1 == "NULL") {
+            __parseerror(1, l, o - len);
+            exit(1);
+        }
         error = if_symbol(t1);
-        if (error != 100)
-            __parseerror(error, l, o - len + 1);
+        if (error != 100) {
+            __parseerror(error, l, o - len);
+            exit(1);
+        }
         t2 = read_token();
         // expected a number
-        if (t2 == "NULL")
-            __parseerror(0, l, o - len + 1);
+        if (t2 == "NULL") {
+            __parseerror(0, l, o - len);
+            exit(1);
+        }
         error = if_number(t2);
-        if (error != 100)
-            __parseerror(error, l, o - len + 1);
-        else
-            value = stoi(t2);
+        if (error != 100) {
+            __parseerror(error, l, o - len);
+            exit(1);
+        } else
+            try {
+                value = stoi(t2);
+            }
+            catch (std::invalid_argument &e) {
+                cout << "Invalid token: " << t2 << endl;
+                cout << "error code: " << error << endl;
+            };
         // add to the dict if the symbol has not been seen
         // else defined multiple times
         if (symbol_map.find(t1) == symbol_map.end()) {
             symbol_map[t1] = num_sym++;
-            symbols.push_back(Symbol(t1, l, o - len + 1, module, value, -1));
+            symbols.push_back(Symbol(t1, l, o - len, module, value, -1));
         } else
             // error 7
             symbols[symbol_map[t1]].error = 7;
@@ -280,21 +320,37 @@ vector<pair<string, bool>> read_use() {
     if (ifs.good()) {
         token = read_token();
         error = if_number(token);
-        if (error != 100)
-            __parseerror(error, l, o - len + 1);
-        else
-            use_count = stoi(token);
+        if (error != 100) {
+            __parseerror(error, l, o - len);
+            exit(1);
+        } else
+            try {
+                use_count = stoi(token);
+            }
+            catch (std::invalid_argument &e) {
+                cout << "Invalid token: " << token << endl;
+                cout << "error code: " << error << endl;
+            };
+        // parse error 3
+        if (use_count > 16) {
+            __parseerror(5, l, o - len);
+            exit(1);
+        }
     }
     // read the value pairs
     vector<pair<string, bool>> use_list;
     for (int i = 0; i < use_count; ++i) {
         token = read_token();
         // expected a symbol
-        if (token == "NULL")
-            __parseerror(1, l, o - len + 1);
+        if (token == "NULL") {
+            __parseerror(1, l, o - len);
+            exit(1);
+        }
         error = if_symbol(token);
-        if (error != 100)
-            __parseerror(error, l, o - len + 1);
+        if (error != 100) {
+            __parseerror(error, l, o - len);
+            exit(1);
+        }
         // add this to the module use list
         use_list.push_back(make_pair(token, false));
     }
@@ -310,12 +366,23 @@ void read_ins(vector<pair<string, bool>> use_list) {
     if (ifs.good()) {
         token = read_token();
         error = if_number(token);
-        if (error != 100)
-            __parseerror(error, l, o - len + 1);
-        else
-            ins_count = stoi(token);
+        if (error != 100) {
+            __parseerror(error, l, o - len);
+            exit(1);
+        } else
+            try {
+                ins_count = stoi(token);
+            }
+            catch (std::invalid_argument &e) {
+                cout << "Invalid token: " << token << endl;
+                cout << "error code: " << error << endl;
+            };
     }
     offset += ins_count;
+    if (offset >= 512) {
+        __parseerror(6, l, o - len);
+        exit(1);
+    }
     module_offset.push_back(offset);
     module_ins.push_back(ins_count);
     // read the instruction pairs
@@ -325,32 +392,45 @@ void read_ins(vector<pair<string, bool>> use_list) {
         // read instruction type
         t1 = read_token();
         // expected an address
-        if (t1 == "NULL")
-            __parseerror(1, l, o - len + 1);
+        if (t1 == "NULL") {
+            __parseerror(1, l, o - len);
+            exit(1);
+        }
         error = if_address(t1);
-        if (error != 100)
-            __parseerror(error, l, o - len + 1);
+        if (error != 100) {
+            __parseerror(error, l, o - len);
+            exit(1);
+        }
         // read the instruction
         t2 = read_token();
         // expected a number
-        if (t2 == "NULL")
-            __parseerror(0, l, o - len + 1);
+        if (t2 == "NULL") {
+            __parseerror(0, l, o - len);
+            exit(1);
+        }
         error = if_number(t2);
-        if (error != 100)
-            __parseerror(error, l, o - len + 1);
-        else
-            operation = stoi(t2);
+        if (error != 100) {
+            __parseerror(error, l, o - len);
+            exit(1);
+        } else
+            try {
+                operation = stoi(t2);
+            }
+            catch (std::invalid_argument &e) {
+                cout << "Invalid token: " << t2 << endl;
+                cout << "error code: " << error << endl;
+            };
         if (t1 == "E") {
             // error 3
             if (operation % 1000 >= use_list.size())
-                instructs.push_back(Instruction(operation, "I", "NULL", l, o - len + 1, module, -1, 3));
+                instructs.push_back(Instruction(operation, "I", "NULL", l, o - len, module, -1, 3));
             else {
                 string ref = use_list[operation % 1000].first;
                 use_list[operation % 1000].second = true;
-                instructs.push_back(Instruction(operation, t1, ref, l, o - len + 1, module, -1));
+                instructs.push_back(Instruction(operation, t1, ref, l, o - len, module, -1));
             }
         } else
-            instructs.push_back(Instruction(operation, t1, "NULL", l, o - len + 1, module, -1));
+            instructs.push_back(Instruction(operation, t1, "NULL", l, o - len, module, -1));
     }
     use_lists.push_back(use_list);
 }
@@ -425,7 +505,7 @@ int main(int argc, char *argv[]) {
         if (symbol.original > module_ins[symbol.module - 1]) {
             printf("Warning: Module %d: %s too big %d (max=%d) assume zero relative\n", symbol.module,
                    symbol.name.c_str(),
-                   symbol.original, module_ins[symbol.module - 1]);
+                   symbol.original, module_ins[symbol.module - 1] - 1);
             symbol.error = 8;
             symbol.value = 0;
         } else
