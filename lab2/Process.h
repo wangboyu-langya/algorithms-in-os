@@ -11,16 +11,16 @@
 class Process {
 public:
     int pid;
-    int finish; // finish time
-    int turn_around; // turnaround time
     int prio; // priority
     int arrival; // arrival time
     int total_cpu;
     int remain_cpu; // remaining cpu burst
     int io_seed;
     int cb_seed;
-    int io_burst;
-    int cpu_burst;
+    int cpu_burst = 0;
+    int io_burst = 0;
+    int finish = 0; // finish time
+    int turn_around = 0; // turnaround time
     int time;
     state status;
 

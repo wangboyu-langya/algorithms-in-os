@@ -22,26 +22,19 @@ void Des::insert(Event e) {
                 break;
             }
                 // case 2: insert the event between the previous and the latter one
-            else if (aft != events.end() && e.trigger < (*aft).trigger) {
-                events.insert(aft, e);
-                break;
-            }
-                // case 3: move the iterator
+            else if (aft != events.end())
+                if (e.trigger < (*aft).trigger) {
+                    events.insert(aft, e);
+                    break;
+                    // case 3: move the iterator
+                } else {
+                    bef++;
+                    aft++;
+                }
+                // otherwise reach the end
             else {
-                // TODO: case 4 should be resolved in scheduler instead of Des layer
-//                        // case 4: two events at the same time
-//                        if (e.trigger != (*aft).trigger)
-//                            // whether they are attached to the same process
-//                            if (e.process == (*bef).process)
-//                                if (e.type == Done)
-//                                    events.insert(bef, e);
-//                                else if (e.type == )
-                // ensure aft doesn't go beyond
-                if (aft != events.end()) aft++;
-                // e is the latest, attached to the end
-                if (bef != events.end()) bef++;
-                else
-                    events.push_back(e);
+                events.push_back(e);
+                break;
             }
 
     }

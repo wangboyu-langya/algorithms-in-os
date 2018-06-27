@@ -16,25 +16,20 @@ using namespace std;
 
 class Scheduler {
 public:
-    list<reference_wrapper<Process>> ps; // list of all the processes
-//    list<Process &> run; // running processes
-    list<reference_wrapper<Process>> run; // running processes
-//    list<Process &> ready; // ready processes
-    list<reference_wrapper<Process>> ready; // running processes
-//    list<Process &> blocked; // ready processes
-//    list<Process &> preempted; // ready processes
-//    list<Process &> finished; // ready processes
-    list<reference_wrapper<Process>> finished; // running processes
+    list<Process*> ps; // list of all the processes
+    list<Process*> run; // running processes
+    list<Process*> ready; // running processes
+    list<Process*> finished; // running processes
 
     Scheduler() = default;
 
-    Scheduler(vector <Process> p);
+    Scheduler(vector <Process> &p);
 
     // next event based on the finished event
-    virtual Event next(Event &e);
+    virtual Event next(Event &e)= 0;
 
     // get running process
-    virtual Event get(int t);
+    virtual Event get(int t)= 0;
 
     // whether the scheduler finishes
     bool running();

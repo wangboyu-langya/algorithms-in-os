@@ -30,10 +30,10 @@ Des des;
 vector<Process> processes;
 sch sch_type;
 
-Process empty_process; // and empty process
+//Process empty_process; // and empty process
 
 //Event empty_event = Event(0, 0, 0, 0, empty_process, Empty); // and empty process
-Event empty_event = Event(empty_process, Empty); // and empty process
+//Event empty_event = Event(empty_process, Empty); // and empty process
 
 
 // init the arguments and input files
@@ -103,7 +103,8 @@ void init(int argc, char *argv[]) {
     }
     // init the DES layer
     for (Process &s : processes)
-        des.insert(Event(s.time, s.arrival, s, Created, Ready));
+//        des.insert(Event(s->time, s->arrival, s, Created, Ready));
+        des.insert(Event(s.time, s.arrival, &s, Created, Ready));
     if (IF_DEBUG)
         for (Process &s : processes)
             s.print();
@@ -114,12 +115,13 @@ int main(int argc, char *argv[]) {
     // the whole of simulation
     // TODO: I first assume there is no spontaneous event
     while (schdulr->running()) {
+
         // the next event
         Event e1 = des.pop();
         switch (e1.to) {
             case Blocked:
-				Process & cp = e1.process;
-                des.insert(Event(cp.time, e1.trigger + e1.burst, cp, Blocked, Ready));
+                Process *cp = e1.process;
+                des.insert(Event(cp->time, e1.trigger + e1.burst, cp, Blocked, Ready));
         }
         Event e2 = schdulr->next(e1);
         if (e2.to != Empty)
