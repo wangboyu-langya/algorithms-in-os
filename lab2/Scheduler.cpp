@@ -40,23 +40,53 @@ Event Scheduler_rr::get(int t) {
     }
 }
 
-Event Scheduler_rr::next(Event &e) {
-    Process *cp = e.process;
-    int current_time = e.trigger;
-    switch (e.to) {
-        case Running:
-            // check whether the process has ended
-            if (cp->remain_cpu == 0) {
-                ps.remove(cp);
-                finished.push_back(cp);
-                return Event(cp->time, current_time + e.burst, cp, Running, Done);
-            } else {
-                // allocate I/O if cpu burst is used up
-                if (cp->cpu_burst == 0) {
-                    int io = my_random(cp->io_seed);
-                    return Event(cp->time, current_time + e.burst, io, cp, Running, Blocked);
-                } else
-                    return Event(cp->time, current_time + e.burst, cp, Running, Ready);
-            }
+Event Scheduler_fcfs::get(int t) {
+    Process *cp = ready.front();
+    ready.pop_front();
+    run.push_back(cp);
+    // allocate a new one
+    if (cp->cpu_burst == 0) {
+        int cb = my_random(cp->cb_seed);
+        if (cb > cp->remain_cpu)
+            cb = cp->remain_cpu;
+        cp->cpu_burst = cb;
+        return Event(cp->time, t, cp->cpu_burst, cp, Ready, Running);
     }
 }
+
+Event Scheduler_lcfs::get(int t) {
+    Process *cp = ready.back();
+    ready.pop_back();
+    run.push_back(cp);
+    // allocate a new one
+    if (cp->cpu_burst == 0) {
+        int cb = my_random(cp->cb_seed);
+        if (cb > cp->remain_cpu)
+            cb = cp->remain_cpu;
+        cp->cpu_burst = cb;
+        return Event(cp->time, t, cp->cpu_burst, cp, Ready, Running);
+    }
+}
+
+Event Scheduler_sjf::get(int t) {
+    if (t == 67)
+        cout << "stop" << endl;
+    Process *cp = ready.front();
+    for (auto p : ready) {
+        if(p->remain_cpu < cp->remain_cpu)
+            cp = p;
+    }
+    ready.remove(cp);
+    run.push_back(cp);
+    // allocate a new one
+    if (cp->cpu_burst == 0) {
+        int cb = my_random(cp->cb_seed);
+        if (cb > cp->remain_cpu)
+            cb = cp->remain_cpu;
+        cp->cpu_burst = cb;
+        return Event(cp->time, t, cp->cpu_burst, cp, Ready, Running);
+    }
+}
+
+
+

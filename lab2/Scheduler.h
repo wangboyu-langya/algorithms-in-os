@@ -22,15 +22,11 @@ public:
     list<Process*> finished; // running processes
 
     Scheduler() = default;
-
     Scheduler(vector <Process> &p);
-
     // next event based on the finished event
-    virtual Event next(Event &e)= 0;
-
+//    virtual Event next(Event &e)= 0;
     // get running process
     virtual Event get(int t)= 0;
-
     // whether the scheduler finishes
     bool running();
 };
@@ -42,7 +38,29 @@ public:
     explicit Scheduler_rr(vector<Process> &p, int q);
     // get another process to run
     Event get(int t) override;
-    Event next(Event &e) override;
 };
+
+class Scheduler_fcfs : public Scheduler {
+public:
+    // get another process to run
+    using Scheduler::Scheduler;
+    Event get(int t) override;
+};
+
+class Scheduler_lcfs : public Scheduler {
+public:
+    // get another process to run
+    using Scheduler::Scheduler;
+    Event get(int t) override;
+};
+
+class Scheduler_sjf : public Scheduler {
+public:
+    // get another process to run
+    using Scheduler::Scheduler;
+    Event get(int t) override;
+};
+
+
 
 #endif //LAB02_SCHEDULER_H

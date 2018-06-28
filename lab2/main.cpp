@@ -97,10 +97,18 @@ void init(int argc, char *argv[]) {
     }
     // init the scheduler
     switch (sch_type) {
-//        case FCFS:
-//            schdulr = Scheduler_fcfs(processes);
+        case FCFS:
+            schdulr = new Scheduler_fcfs(processes);
+            break;
+        case LCFS:
+            schdulr = new Scheduler_lcfs(processes);
+            break;
+        case SJF:
+            schdulr = new Scheduler_sjf(processes);
+            break;
         case RR:
             schdulr = new Scheduler_rr(processes, quantum);
+            break;
     }
     // init the DES layer
     for (Process &s : processes)
@@ -168,7 +176,19 @@ int main(int argc, char *argv[]) {
                     cp->time = current_time;
                     cp->status = Running;
                     // call the scheduler to arrange next event
-                    des.insert(schdulr->next(e));
+                    // check whether the process has ended
+                    if (cp->remain_cpu == 0) {
+                        schdulr->ps.remove(cp);
+                        schdulr->finished.push_back(cp);
+                        des.insert(Event(cp->time, current_time + e.burst, cp, Running, Done));
+                    } else {
+                        // allocate I/O if cpu burst is used up
+                        if (cp->cpu_burst == 0) {
+                            int io = my_random(cp->io_seed);
+                            des.insert(Event(cp->time, current_time + e.burst, io, cp, Running, Blocked));
+                        } else
+                            des.insert(Event(cp->time, current_time + e.burst, cp, Running, Ready));
+                    }
                     break;
                 case Blocked:
                     // insert them to ready
