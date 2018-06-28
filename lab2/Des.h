@@ -24,6 +24,9 @@ public:
     // return the first element of the list and delete it
     // TODO: need to check the reference is valid
     Event pop();
+
+    // whether other events at the same time
+    bool next(int time);
 };
 
 

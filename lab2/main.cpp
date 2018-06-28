@@ -23,6 +23,7 @@ using namespace std;
 // global variables
 bool if_verbose; // whether verbose output
 bool IF_DEBUG = true;
+bool call_scheduler = false;
 int quantum; // quantum for RR and PRIO only
 std::ifstream ifs; // the input file
 Scheduler *schdulr;
@@ -91,7 +92,7 @@ void init(int argc, char *argv[]) {
             exit(1);
         }
         // assume all the processes are increasing arrival time order
-        processes.push_back(Process(i, a[0], a[1], a[2], a[3], my_random(4)));
+        processes.push_back(Process(i, a[0], a[1], a[2], a[3], my_random(4) - 1));
         i++;
     }
     // init the scheduler
@@ -114,18 +115,93 @@ int main(int argc, char *argv[]) {
     init(argc, argv);
     // the whole of simulation
     // TODO: I first assume there is no spontaneous event
-    while (schdulr->running()) {
-
+    while (!des.events.empty()) {
         // the next event
-        Event e1 = des.pop();
-        switch (e1.to) {
-            case Blocked:
-                Process *cp = e1.process;
-                des.insert(Event(cp->time, e1.trigger + e1.burst, cp, Blocked, Ready));
+        Event e = des.pop();
+        int current_time = e.trigger;
+        while (true) {
+//            if (current_time == 510)
+//                cout << "stop" << endl;
+            Process *cp = e.process;
+            int last_time = e.last_trigger;
+            // the general philosophy is to print the state at from
+            switch (e.to) {
+                case Ready:
+                    // a new process is ready
+                    switch (e.from) {
+                        case Created:
+                            cout << current_time << ' ' << cp->pid << ' ' << current_time - last_time << ':'
+                                 << "CREATED -> READY"
+                                 << endl;
+                            break;
+                        case Blocked:
+                            cout << current_time << ' ' << cp->pid << ' ' << current_time - last_time << ':'
+                                 << "BLOCK -> READY"
+                                 << endl;
+                            break;
+                        case Running:
+                            cout << current_time << ' ' << e.process->pid << ' ' << current_time - last_time << ':'
+                                 << "RUNNG -> READY"
+                                 << ' ' << "cb=" << cp->cpu_burst << " rem=" << cp->remain_cpu << " prio=" << cp->prio
+                                 << endl;
+                            // delete it from the running
+                            schdulr->run.pop_front();
+                            break;
+                    }
+                    // push it to ready state
+                    schdulr->ready.push_back(cp);
+                    // refresh timing
+                    cp->time = current_time;
+                    cp->status = Ready;
+                    break;
+                case Running:
+                    // a running process has finished
+                    // current runned process, update it
+                    // do the arithmetic
+                    cout << current_time << ' ' << e.process->pid << ' ' << current_time - last_time << ':'
+                         << "READY -> RUNNG"
+                         << ' ' << "cb=" << cp->cpu_burst << " rem=" << cp->remain_cpu << " prio=" << cp->prio
+                         << endl;
+                    cp->remain_cpu -= e.burst;
+                    cp->cpu_burst -= e.burst;
+                    // refresh timing
+                    cp->time = current_time;
+                    cp->status = Running;
+                    // call the scheduler to arrange next event
+                    des.insert(schdulr->next(e));
+                    break;
+                case Blocked:
+                    // insert them to ready
+                    cout << current_time << ' ' << e.process->pid << ' ' << current_time - last_time << ':'
+                         << "RUNNG -> BLOCK"
+                         << ' ' << "ib=" << e.burst << " rem=" << cp->remain_cpu << endl;
+                    // refresh timing
+                    cp->time = current_time;
+                    cp->status = Blocked;
+                    // delete it from the running
+                    schdulr->run.pop_front();
+                    des.insert(Event(cp->time, current_time + e.burst, cp, Blocked, Ready));
+                    break;
+                case Done:
+                    cout << current_time << ' ' << e.process->pid << ' ' << current_time - last_time << ':'
+                         << "Done"
+                         << endl;
+                    // refresh timing
+                    cp->time = current_time;
+                    cp->status = Done;
+                    // delete it from the running
+                    schdulr->run.pop_front();
+            }
+            // break if there is no next event
+            if (des.next(current_time))
+                e = des.pop();
+            else
+                break;
         }
-        Event e2 = schdulr->next(e1);
-        if (e2.to != Empty)
+        if (schdulr->run.empty() && !schdulr->ready.empty()) {
+            Event e2 = schdulr->get(current_time);
             des.insert(e2);
+        }
     }
     delete schdulr;
 }

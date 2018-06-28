@@ -45,3 +45,11 @@ Event Des::pop() {
     events.pop_front();
     return e;
 }
+
+bool Des::next(int time) {
+    if (events.empty())
+        return false;
+    if (events.front().trigger == time)
+        return true;
+    else return false;
+}
