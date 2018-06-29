@@ -11,7 +11,8 @@
 class Process {
 public:
     int pid;
-    int prio; // priority
+    int prio; // dynamic priority
+    int prio_static; // static priority
     int arrival; // arrival time
     int total_cpu;
     int remain_cpu; // remaining cpu burst
@@ -19,16 +20,20 @@ public:
     int cb_seed;
     int cpu_burst = 0;
     int io_burst = 0;
+    int total_io = 0;
     int finish = 0; // finish time
+    int io_time = 0;
+    int cpu_wait = 0;
     int turn_around = 0; // turnaround time
     int time;
-    state status;
 
     Process() = default;
 
     Process(int p, int at, int tc, int c, int i, int pr = 0);
 
     void print();
+
+    void report();
 };
 
 

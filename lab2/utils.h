@@ -10,6 +10,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include "Process.h"
 
 using namespace std;
 // enum types
@@ -19,6 +20,9 @@ enum sch {
 };
 enum state {
     Created, Ready, Running, Blocked, Done, Empty
+};
+enum io_state {
+    Busy, Vacant
 };
 
 

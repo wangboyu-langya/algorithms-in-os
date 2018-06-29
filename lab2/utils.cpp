@@ -3,6 +3,7 @@
 //
 
 #include "utils.h"
+#include "Process.h"
 
 vector<int> rand_v; // random vector
 vector<int>::iterator rand_it;
@@ -35,3 +36,7 @@ int my_random(int burst) {
         rand_it = rand_v.begin();
     return *rand_it++ % burst + 1;
 }
+
+
+
+
