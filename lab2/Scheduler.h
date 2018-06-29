@@ -19,13 +19,15 @@ class Scheduler {
 public:
     list<Process *> ps; // list of all the processes
     list<Process *> run; // running processes
-    list<Process *> ready_list; // running processes
-    list<Process *>* ready = &ready_list; // running processes
-    list<Process *> expire_list; // running processes
-    list<Process *>* expire = &expire_list; // running processes
-    list<Process *> blocked; // running processes
-    list<Process *> finished; // running processes
+    list<Process *> ready_list;
+    list<Process *>* ready = &ready_list; // ready processes
+    list<Process *> expire_list;
+    list<Process *> blocked;
+    list<Process *> finished;
+    // this is only useful in priority scheduler
+    list<Process *>* expire = &expire_list; // expire processes
     int io_waste = 0;
+    // record io time
     int last_io_check = 0;
     io_state last_io_status = Vacant;
 
@@ -33,9 +35,7 @@ public:
 
     Scheduler(vector<Process> &p);
 
-    // next event based on the finished event
-//    virtual Event next(Event &e)= 0;
-    // get running process
+    // get running process at time t
     virtual Event get(int t)= 0;
 
     // whether the scheduler finishes
@@ -88,6 +88,5 @@ public:
 
     Event get(int t) override;
 };
-
 
 #endif //LAB02_SCHEDULER_H

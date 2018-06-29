@@ -42,6 +42,7 @@ void Scheduler::report(vector<Process> &processes, sch type, int quantum, int t)
     double cpu_wait = 0;
     double num_p = finished.size();
     double through_put = num_p / t * 100;
+    // statistics
     for (auto &p : processes) {
         p.report();
         cpu_util += p.total_cpu;
@@ -61,18 +62,18 @@ void Scheduler::report(vector<Process> &processes, sch type, int quantum, int t)
            turn_around,
            cpu_wait,
            through_put);
-
-    // statistics
 }
 
 Scheduler_prio::Scheduler_prio(vector<Process> &p, int q) : Scheduler(p), quantum(q) {}
 
 Event Scheduler_prio::get(int t) {
+    // exchange ready and expire if necessary
     if (ready->empty()){
         list<Process*>* tmp = ready;
         ready = expire;
         expire = tmp;
     }
+    // find the one with the highest priority
     Process *cp = ready->front();
     if (cp->prio != 3) {
         for (auto r : *ready) {
@@ -83,8 +84,6 @@ Event Scheduler_prio::get(int t) {
     ready->remove(cp);
     run.push_back(cp);
     // if the cpu burst has been used up, allocate a new one
-//    if (t == 510)
-//        cout << "stop" << endl;
     if (cp->cpu_burst == 0) {
         int cb = my_random(cp->cb_seed);
         if (cb > cp->remain_cpu)
@@ -108,9 +107,6 @@ Event Scheduler_rr::get(int t) {
     ready->pop_front();
     run.push_back(cp);
     // if the cpu burst has been used up, allocate a new one
-
-//    if (t == 510)
-//        cout << "stop" << endl;
     if (cp->cpu_burst == 0) {
         int cb = my_random(cp->cb_seed);
         if (cb > cp->remain_cpu)
@@ -126,6 +122,7 @@ Event Scheduler_rr::get(int t) {
 }
 
 Event Scheduler_fcfs::get(int t) {
+    // get the first one in the front
     Process *cp = ready->front();
     ready->pop_front();
     run.push_back(cp);
@@ -140,6 +137,7 @@ Event Scheduler_fcfs::get(int t) {
 }
 
 Event Scheduler_lcfs::get(int t) {
+    // get the newest one, which is on the back
     Process *cp = ready->back();
     ready->pop_back();
     run.push_back(cp);
@@ -154,9 +152,8 @@ Event Scheduler_lcfs::get(int t) {
 }
 
 Event Scheduler_sjf::get(int t) {
-//    if (t == 67)
-//        cout << "stop" << endl;
     Process *cp = ready->front();
+    // find the shortest
     for (auto p : *ready) {
         if (p->remain_cpu < cp->remain_cpu)
             cp = p;
@@ -172,6 +169,3 @@ Event Scheduler_sjf::get(int t) {
         return Event(cp->time, t, cp->cpu_burst, cp, Ready, Running);
     }
 }
-
-
-

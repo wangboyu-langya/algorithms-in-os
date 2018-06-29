@@ -18,16 +18,18 @@ using namespace std;
 enum sch {
     FCFS, LCFS, SJF, RR, PRIO
 };
+// scheduler state
 enum state {
-    Created, Ready, Running, Blocked, Done, Empty
+    Created, Ready, Running, Blocked, Done
 };
 enum io_state {
     Busy, Vacant
 };
 
-
+// load a random number file
 void load_rand(string &rand_name);
 
+// return a random number
 int my_random(int burst);
 
 #endif //LAB02_UTILS_H

@@ -1,2 +1,2 @@
 all:
-	g++ *.cpp -o scheduler
+	g++ -std=c++11 *.cpp -o scheduler

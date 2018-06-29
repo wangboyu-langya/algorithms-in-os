@@ -36,7 +36,6 @@ void Des::insert(Event e) {
                 events.push_back(e);
                 break;
             }
-
     }
 }
 

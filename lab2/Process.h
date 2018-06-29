@@ -19,8 +19,6 @@ public:
     int io_seed;
     int cb_seed;
     int cpu_burst = 0;
-    int io_burst = 0;
-    int total_io = 0;
     int finish = 0; // finish time
     int io_time = 0;
     int cpu_wait = 0;
