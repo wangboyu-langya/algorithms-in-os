@@ -23,7 +23,6 @@ using namespace std;
 // global variables
 bool verbose; // whether verbose output
 bool IF_DEBUG = false;
-bool call_scheduler = false;
 int quantum = 0; // quantum for RR and PRIO only
 std::ifstream ifs; // the input file
 Scheduler *schdulr;
@@ -109,7 +108,6 @@ void init(int argc, char *argv[]) {
     }
     // init the DES layer
     for (Process &s : processes)
-//        des.insert(Event(s->time, s->arrival, s, Created, Ready));
         des.insert(Event(s.time, s.arrival, &s, Created, Ready));
     if (IF_DEBUG)
         for (Process &s : processes)
