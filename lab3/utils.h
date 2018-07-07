@@ -10,40 +10,41 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "Process.h"
 
 using namespace std;
 // enum type
 enum Pge {
     Fifo, Sec_chance, Random, Nru, Clock, Aging
 };
-enum Instruct {
+enum Ins{
     r, w, c
 };
 
 // struct
 struct Pte {
     // required five fields
-    unsigned int valid:1;
-    unsigned int write_protect:1;
-    unsigned int modified:1;
-    unsigned int referenced:1;
-    unsigned int page_out:1;
+    unsigned valid:1;
+    unsigned write_protect:1;
+    unsigned modified:1;
+    unsigned referenced:1;
+    unsigned page_out:1;
     // frame number
-    unsigned int frame:7;
+    unsigned frame:7;
     // additional customized fields
-    unsigned int file_map:1;
+    unsigned file_map:1;
+    unsigned init:1;
 
     Pte() = default;
-    Pte(int v, int w, int m, int r, int p, int f, int fm);
+    Pte(unsigned v, unsigned w, unsigned m, unsigned r, unsigned p, unsigned f, unsigned fm);
 };
 
-struct Ins {
-    Instruct type;
+struct Instruction {
+    Ins type;
     int virtual_page;
+    Instruction(Ins t, int v);
 };
 
-struct frame {
+struct Frame {
     unsigned int number;
 };
 
