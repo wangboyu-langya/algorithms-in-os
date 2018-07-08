@@ -19,6 +19,7 @@
 using namespace std;
 
 bool if_debug = false;
+bool if_verbose = false;
 Pge page_tye;
 Pager *pager;
 int frame_number = 0;
@@ -33,10 +34,12 @@ unordered_map<Ins, string> ins_format{{c, "c"},
 unordered_map<Frame *, Pte *> frame_table;
 
 void init(int argc, char *argv[]) {
-    if (argc != 6) {
+    if (argc != 6 && argc != 7) {
         cout << "Please use: lab03.exe -a[fsrnca] -o[OPFS] -f<num_frames> inputfile randfile" << endl;
         exit(0);
     }
+    if (argc == 7)
+        if_verbose = true;
     string input_name, rand_name, num_frames, pager_name;
     pager_name = argv[1];
     num_frames = argv[3];
@@ -147,6 +150,9 @@ void init(int argc, char *argv[]) {
         case Fifo:
             pager = new Pager_fifo(frame_number);
             break;
+        case Sec_chance:
+            pager = new Pager_sec(frame_number);
+            break;
     }
 }
 
@@ -162,12 +168,22 @@ int main(int argc, char *argv[]) {
         if (ins->type == c) {
             cout << counter << ": ==> c " << ins->location << endl;
             cp = &processes.at(ins->location);
+            instructions.pop_front();
+            counter++;
+            continue;
         } else {
             // the only difference between r and w is the modified bit
             if (ins->type == w) {
-                cout << counter << ": ==> w " << ins->location << endl;
-            } else
-                cout << counter << ": ==> r " << ins->location << endl;
+                if (if_verbose)
+                    cout << counter << ": ==> w " << ins->location << " " << cp->pid << endl;
+                else
+                    cout << counter << ": ==> w " << ins->location << endl;
+            } else {
+                if (if_verbose)
+                    cout << counter << ": ==> r " << ins->location << " " << cp->pid << endl;
+                else
+                    cout << counter << ": ==> r " << ins->location << endl;
+            }
 
             // if part of vma, access the pte
             if (cp->legal(ins->location)) {
@@ -182,7 +198,7 @@ int main(int argc, char *argv[]) {
 
             // if the virtual page is valid, do nothing
             // else find the vitim
-            if (counter == 68)
+            if (counter == 149)
                 cout << "stop" << endl;
             if (!cpte->valid) {
                 Frame *victim = pager->get();
@@ -212,6 +228,8 @@ int main(int argc, char *argv[]) {
                 // reset frame
                 victim->process = cp->pid;
                 victim->virtual_page = ins->location;
+                victim->referenced = 0;
+                victim->modified = 0;
                 // reset current pte
                 cpte->frame = victim->number;
                 cpte->valid = 1;
@@ -219,12 +237,19 @@ int main(int argc, char *argv[]) {
         }
         // reset current pte
         if (ins->type == w)
-            if (cpte->write_protect == 0)
+            if (cpte->write_protect == 0) {
                 cpte->modified = 1;
-            else
+                if (page_tye != Nru)
+                    pager->frames.at(cpte->frame).referenced = 1;
+            } else {
+                if (page_tye != Nru)
+                    pager->frames.at(cpte->frame).referenced = 1;
                 cout << " SEGPROT" << endl;
-        else if (ins->type = r)
+            }
+        else if (ins->type == r) {
             cpte->referenced = 1;
+            pager->frames.at(cpte->frame).referenced = 1;
+        }
         instructions.pop_front();
         counter++;
     }

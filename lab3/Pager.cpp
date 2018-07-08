@@ -10,37 +10,43 @@ Pager::Pager(int fn) {
     frames.reserve(frame_number);
     for (int i = 0; i < frame_number; ++i) {
         frames.push_back(Frame(i));
-        frames_free.push_back(&frames.back());
+        free.push_back(&frames.back());
     }
 }
 
 Frame *Pager_fifo::get() {
     Frame *f;
-    if (!frames_free.empty()) {
-        f = frames_free.front();
-        frames_free.pop_front();
-        frames_occupied.push_back(f);
+    if (!free.empty()) {
+        f = free.front();
+        free.pop_front();
+        occupied.push_back(f);
     } else {
-        f = frames_occupied.front();
-        frames_occupied.pop_front();
-        frames_occupied.push_back(f);
+        f = occupied.front();
+        occupied.pop_front();
+        occupied.push_back(f);
     }
     return f;
 }
 
 Frame *Pager_sec::get() {
     Frame *f;
-    if (!frames_free.empty()) {
-        f = frames_free.front();
-        frames_free.pop_front();
-        frames_occupied.push_back(f);
+    if (!free.empty()) {
+        f = free.front();
+        free.pop_front();
+        occupied.push_back(f);
     } else {
-        for(auto fr:frames_occupied) {
-            if ()
+        for (auto it = occupied.begin(); it != occupied.end();) {
+            if ((*it)->referenced == 0) {
+                f = *it;
+                occupied.push_back(*it);
+                it = occupied.erase(it);
+                break;
+            } else {
+                (*it)->referenced = 0;
+                occupied.push_back(*it);
+                it = occupied.erase(it);
+            }
         }
-        f = frames_occupied.front();
-        frames_occupied.pop_front();
-        frames_occupied.push_back(f);
     }
     return f;
 }
