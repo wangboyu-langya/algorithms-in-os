@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
     Instruction *ins;
     Process *cp;
     Pte *cpte;
-    int counter = 0;
+    long int counter = 0;
     while (!instructions.empty()) {
         ins = &instructions.front();
         // choose current process
@@ -172,15 +172,18 @@ int main(int argc, char *argv[]) {
             // if part of vma, access the pte
             if (cp->legal(ins->location)) {
                 cpte = &cp->page_table[ins->location];
-                if (ins->type == w)
-                    cpte->modified = 1;
                 // else throw exception
             } else {
-                cout << " SEGV" << endl;
+                cout << "  SEGV" << endl;
+                instructions.pop_front();
+                counter++;
+                continue;
             };
 
             // if the virtual page is valid, do nothing
             // else find the vitim
+            if (counter == 68)
+                cout << "stop" << endl;
             if (!cpte->valid) {
                 Frame *victim = pager->get();
                 // the frame is not free
@@ -189,7 +192,7 @@ int main(int argc, char *argv[]) {
                     Pte *pte_victim = &processes.at(victim->process).page_table[victim->virtual_page];
                     // page out if modified
                     if (pte_victim->modified == 1) {
-                        if (pte_victim->file_map == 0)
+                        if (pte_victim->file_map == 1)
                             cout << " FOUT" << endl;
                         else
                             cout << " OUT" << endl;
@@ -214,6 +217,14 @@ int main(int argc, char *argv[]) {
                 cpte->valid = 1;
             }
         }
+        // reset current pte
+        if (ins->type == w)
+            if (cpte->write_protect == 0)
+                cpte->modified = 1;
+            else
+                cout << " SEGPROT" << endl;
+        else if (ins->type = r)
+            cpte->referenced = 1;
         instructions.pop_front();
         counter++;
     }

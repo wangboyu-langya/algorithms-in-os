@@ -23,16 +23,16 @@ enum Ins{
 // struct
 struct Pte {
     // required five fields, 5 bits
-    int valid:1;
-    int write_protect:1;
-    int modified:1;
-    int referenced:1;
-    int page_out:1;
+    unsigned int valid:1;
+    unsigned int write_protect:1;
+    unsigned int modified:1;
+    unsigned int referenced:1;
+    unsigned int page_out:1;
     // frame number, 7 bits
-    int frame:7;
+    unsigned int frame:7;
     // additional customized fields
-    int file_map:1;
-    int init:1;
+    unsigned int file_map:1;
+    unsigned int init:1;
 
     Pte() = default;
     Pte(int v, int w, int m, int r, int p, int f, int fm);
@@ -50,6 +50,8 @@ struct Frame {
     int number;
     int process = -1;
     int virtual_page = 0;
+    int referenced = 0;
+    int modified = 0;
     Frame(int n);;
 };
 

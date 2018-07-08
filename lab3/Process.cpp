@@ -16,6 +16,6 @@ Process::Process(int p) {
 }
 
 void Process::insert(int lb, int ub, int protect, int file_map) {
-    for (int i = lb; i < ub; ++i)
+    for (int i = lb; i <= ub; ++i)
         page_table[i] = Pte(0, protect, 0, 0, 0, 0, file_map);
 }

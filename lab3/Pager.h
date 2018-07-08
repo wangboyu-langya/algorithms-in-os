@@ -29,4 +29,11 @@ class Pager_fifo : public Pager {
     Frame *get();;
 };
 
+class Pager_sec : public Pager {
+    list<Frame *> frames_occupied;
+    using Pager::Pager;
+
+    Frame *get();;
+};
+
 #endif //LAB03_PAGER_H

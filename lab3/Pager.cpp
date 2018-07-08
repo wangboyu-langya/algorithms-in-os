@@ -15,13 +15,29 @@ Pager::Pager(int fn) {
 }
 
 Frame *Pager_fifo::get() {
-    Frame* f;
+    Frame *f;
     if (!frames_free.empty()) {
         f = frames_free.front();
         frames_free.pop_front();
         frames_occupied.push_back(f);
+    } else {
+        f = frames_occupied.front();
+        frames_occupied.pop_front();
+        frames_occupied.push_back(f);
     }
-    else {
+    return f;
+}
+
+Frame *Pager_sec::get() {
+    Frame *f;
+    if (!frames_free.empty()) {
+        f = frames_free.front();
+        frames_free.pop_front();
+        frames_occupied.push_back(f);
+    } else {
+        for(auto fr:frames_occupied) {
+            if ()
+        }
         f = frames_occupied.front();
         frames_occupied.pop_front();
         frames_occupied.push_back(f);
