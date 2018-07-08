@@ -8,15 +8,16 @@
 #include "utils.h"
 #include <unordered_map>
 
+using namespace std;
 class Process {
 public:
     Process(int p);
 
-    std::unordered_map<unsigned, Pte> page_table;
+    std::unordered_map<int, Pte> page_table;
     int pid;
 
     // init pte for the given address
-    void insert(unsigned int lb, unsigned int ub, unsigned int protect, unsigned int file_map);
+    void insert(int lb, int ub, int protect, int file_map);
 
     // if a given virtual page is legal
     bool legal(int i);

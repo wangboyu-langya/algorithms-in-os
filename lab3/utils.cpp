@@ -38,7 +38,7 @@ int my_random(int burst) {
 }
 
 
-Pte::Pte(unsigned v, unsigned w, unsigned m, unsigned r, unsigned p, unsigned f, unsigned fm) {
+Pte::Pte(int v, int w, int m, int r, int p, int f, int fm) {
     valid = v;
     write_protect = w;
     modified = m;
@@ -49,7 +49,17 @@ Pte::Pte(unsigned v, unsigned w, unsigned m, unsigned r, unsigned p, unsigned f,
     init = 1;
 }
 
+void Pte::reset() {
+    modified = 0;
+    valid = 0;
+    referenced = 0;
+}
+
 Instruction::Instruction(Ins t, int v) {
     type = t;
-    virtual_page = v;
+    location = v;
+}
+
+Frame::Frame(int n) {
+    number = n;
 }

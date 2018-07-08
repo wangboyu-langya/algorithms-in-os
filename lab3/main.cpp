@@ -14,17 +14,23 @@
 #include <list>
 #include "utils.h"
 #include "Process.h"
+#include "Pager.h"
 
 using namespace std;
 
-bool if_debug = true;
+bool if_debug = false;
 Pge page_tye;
+Pager *pager;
 int frame_number = 0;
 int num_process = 0;
-vector<Instruction> instructions;
+list<Instruction> instructions;
 vector<Pte> page_table;
 vector<Process> processes;
 std::ifstream ifs; // the input file
+unordered_map<Ins, string> ins_format{{c, "c"},
+                                      {r, "r"},
+                                      {w, "w"}};
+unordered_map<Frame *, Pte *> frame_table;
 
 void init(int argc, char *argv[]) {
     if (argc != 6) {
@@ -76,7 +82,6 @@ void init(int argc, char *argv[]) {
     bool read_vma = false;
     int num_vma = 0;
     int counter = 0;
-    Process *current;
     while (getline(ifs, l)) {
         // skip the beginning of comment
         if (l[0] == '#') {
@@ -96,10 +101,7 @@ void init(int argc, char *argv[]) {
                 num_vma = stoi(token);
                 if (if_debug)
                     cout << "Process " << counter << ": " << endl;
-                Process p(counter++);
-				Process tmp(p);
-                current = &p;
-                processes.push_back(*current);
+                processes.push_back(Process(counter++));
                 read_vma = true;
             }
                 // else read a vma
@@ -123,6 +125,8 @@ void init(int argc, char *argv[]) {
     unordered_map<char, Ins> ins_map{{'c', c},
                                      {'r', r},
                                      {'w', w}};
+    if (if_debug)
+        cout << "Instructions:" << endl;
     while (getline(ifs, l)) {
         if (l[0] == '#') break;
         string token;
@@ -138,8 +142,79 @@ void init(int argc, char *argv[]) {
         // assume all the processes are increasing arrival time order
         instructions.push_back(Instruction(ins_map[t], addr));
     }
+    // init the pager
+    switch (page_tye) {
+        case Fifo:
+            pager = new Pager_fifo(frame_number);
+            break;
+    }
 }
 
 int main(int argc, char *argv[]) {
     init(argc, argv);
+    Instruction *ins;
+    Process *cp;
+    Pte *cpte;
+    int counter = 0;
+    while (!instructions.empty()) {
+        ins = &instructions.front();
+        // choose current process
+        if (ins->type == c) {
+            cout << counter << ": ==> c " << ins->location << endl;
+            cp = &processes.at(ins->location);
+        } else {
+            // the only difference between r and w is the modified bit
+            if (ins->type == w) {
+                cout << counter << ": ==> w " << ins->location << endl;
+            } else
+                cout << counter << ": ==> r " << ins->location << endl;
+
+            // if part of vma, access the pte
+            if (cp->legal(ins->location)) {
+                cpte = &cp->page_table[ins->location];
+                if (ins->type == w)
+                    cpte->modified = 1;
+                // else throw exception
+            } else {
+                cout << " SEGV" << endl;
+            };
+
+            // if the virtual page is valid, do nothing
+            // else find the vitim
+            if (!cpte->valid) {
+                Frame *victim = pager->get();
+                // the frame is not free
+                if (victim->process != -1) {
+                    cout << " UNMAP " << victim->process << ":" << victim->virtual_page << endl;
+                    Pte *pte_victim = &processes.at(victim->process).page_table[victim->virtual_page];
+                    // page out if modified
+                    if (pte_victim->modified == 1) {
+                        if (pte_victim->file_map == 0)
+                            cout << " FOUT" << endl;
+                        else
+                            cout << " OUT" << endl;
+                        pte_victim->page_out = 1;
+                    }
+                    pte_victim->reset();
+                }
+                // decide the content of current pte
+                if (cpte->file_map)
+                    cout << " FIN" << endl;
+                else if (cpte->page_out)
+                    cout << " IN" << endl;
+                else
+                    cout << " ZERO" << endl;
+                // map
+                cout << " MAP " << victim->number << endl;
+                // reset frame
+                victim->process = cp->pid;
+                victim->virtual_page = ins->location;
+                // reset current pte
+                cpte->frame = victim->number;
+                cpte->valid = 1;
+            }
+        }
+        instructions.pop_front();
+        counter++;
+    }
 }

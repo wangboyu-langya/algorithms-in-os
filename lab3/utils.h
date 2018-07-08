@@ -22,30 +22,35 @@ enum Ins{
 
 // struct
 struct Pte {
-    // required five fields
-    unsigned valid:1;
-    unsigned write_protect:1;
-    unsigned modified:1;
-    unsigned referenced:1;
-    unsigned page_out:1;
-    // frame number
-    unsigned frame:7;
+    // required five fields, 5 bits
+    int valid:1;
+    int write_protect:1;
+    int modified:1;
+    int referenced:1;
+    int page_out:1;
+    // frame number, 7 bits
+    int frame:7;
     // additional customized fields
-    unsigned file_map:1;
-    unsigned init:1;
+    int file_map:1;
+    int init:1;
 
     Pte() = default;
-    Pte(unsigned v, unsigned w, unsigned m, unsigned r, unsigned p, unsigned f, unsigned fm);
+    Pte(int v, int w, int m, int r, int p, int f, int fm);
+
+    void reset();
 };
 
 struct Instruction {
     Ins type;
-    int virtual_page;
+    int location;
     Instruction(Ins t, int v);
 };
 
 struct Frame {
-    unsigned int number;
+    int number;
+    int process = -1;
+    int virtual_page = 0;
+    Frame(int n);;
 };
 
 // load a random number file
