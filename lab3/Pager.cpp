@@ -50,3 +50,16 @@ Frame *Pager_sec::get() {
     }
     return f;
 }
+
+Frame *Pager_random::get() {
+    Frame *f;
+    if (!free.empty()) {
+        f = free.front();
+        free.pop_front();
+        occupied.push_back(f);
+    } else {
+        int victim = my_random(frame_number);
+        f = &frames.at(victim);
+    }
+    return f;
+}

@@ -16,6 +16,7 @@ public:
     int frame_number = 0;
     vector<Frame> frames;
     list<Frame *> free;
+    list<Frame *> occupied;
 
     Pager(int fn);
 
@@ -23,14 +24,18 @@ public:
 };
 
 class Pager_fifo : public Pager {
-    list<Frame *> occupied;
     using Pager::Pager;
 
     Frame *get();;
 };
 
 class Pager_sec : public Pager {
-    list<Frame *> occupied;
+    using Pager::Pager;
+
+    Frame *get();;
+};
+
+class Pager_random : public Pager {
     using Pager::Pager;
 
     Frame *get();;

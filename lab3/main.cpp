@@ -153,6 +153,9 @@ void init(int argc, char *argv[]) {
         case Sec_chance:
             pager = new Pager_sec(frame_number);
             break;
+        case Random:
+            pager = new Pager_random(frame_number);
+            break;
     }
 }
 

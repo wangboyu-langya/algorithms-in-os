@@ -34,7 +34,7 @@ int my_random(int burst) {
     // use vector iterator, if reaches the end, reload the iterator
     if (rand_it == rand_v.end())
         rand_it = rand_v.begin();
-    return *rand_it++ % burst + 1;
+    return *rand_it++ % burst;
 }
 
 
