@@ -30,12 +30,13 @@ struct Pte {
     unsigned int page_out:1;
     // frame number, 7 bits
     unsigned int frame:7;
-    // additional customized fields
+    // additional customized fields 20 bits
     unsigned int file_map:1;
-    unsigned int init:1;
+    unsigned int process:10;
+    unsigned int virtual_page:9;
 
     Pte() = default;
-    Pte(int v, int w, int m, int r, int p, int f, int fm);
+    Pte(int v, int w, int m, int r, int p, int f, int fm, int ps, int vp);
 
     void reset();
 };
@@ -53,6 +54,22 @@ struct Frame {
     int referenced = 0;
     int modified = 0;
     Frame(int n);;
+};
+
+struct Pstat {
+    long int unmaps = 0;
+    long int maps = 0;
+    long int ins = 0;
+    long int outs = 0;
+    long int fins = 0;
+    long int fouts = 0;
+    long int zeros = 0;
+    long int segv = 0;
+    long int segprot = 0;
+
+    void print(int p);
+
+    long int calculate();
 };
 
 // load a random number file

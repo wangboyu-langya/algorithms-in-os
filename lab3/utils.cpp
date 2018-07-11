@@ -38,7 +38,7 @@ int my_random(int burst) {
 }
 
 
-Pte::Pte(int v, int w, int m, int r, int p, int f, int fm) {
+Pte::Pte(int v, int w, int m, int r, int p, int f, int fm, int ps, int vp) {
     valid = v;
     write_protect = w;
     modified = m;
@@ -46,7 +46,8 @@ Pte::Pte(int v, int w, int m, int r, int p, int f, int fm) {
     page_out = p;
     frame = f;
     file_map = fm;
-    init = 1;
+    process = ps;
+    virtual_page = vp;
 }
 
 void Pte::reset() {
@@ -62,4 +63,17 @@ Instruction::Instruction(Ins t, int v) {
 
 Frame::Frame(int n) {
     number = n;
+}
+
+void Pstat::print(int p) {
+    printf("PROC[%d]: U=%lu M=%lu I=%lu O=%lu FI=%lu FO=%lu Z=%lu SV=%lu SP=%lu\n",
+           p,
+           unmaps, maps, ins, outs,
+           fins, fouts, zeros,
+           segv, segprot);
+}
+
+long int Pstat::calculate() {
+    return  (unmaps + maps) * 400 + (ins + outs) * 3000 + (fins + fouts) * 2500 + zeros * 150 + segv * 240 +
+           segprot * 300;
 }

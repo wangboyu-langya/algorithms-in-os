@@ -6,6 +6,7 @@
 #include <cctype>
 #include <vector>
 #include <unordered_map>
+#include <utility>      // std::pair
 #include <regex>
 #include <sstream>
 #include <iomanip>
@@ -162,17 +163,21 @@ void init(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     init(argc, argv);
     Instruction *ins;
-    Process *cp;
-    Pte *cpte;
+    Process *cp, *vp;
+    Pte *cpte, *pte_victim;
     long int counter = 0;
+    long int ctx_switches = 0;
+    // process the instructions
     while (!instructions.empty()) {
         ins = &instructions.front();
+
         // choose current process
         if (ins->type == c) {
             cout << counter << ": ==> c " << ins->location << endl;
             cp = &processes.at(ins->location);
             instructions.pop_front();
             counter++;
+            ctx_switches++;
             continue;
         } else {
             // the only difference between r and w is the modified bit
@@ -196,64 +201,136 @@ int main(int argc, char *argv[]) {
                 cout << "  SEGV" << endl;
                 instructions.pop_front();
                 counter++;
+                cp->pstat.segv++;
                 continue;
             };
 
             // if the virtual page is valid, do nothing
             // else find the vitim
-            if (counter == 149)
+            if (counter == 42)
                 cout << "stop" << endl;
             if (!cpte->valid) {
                 Frame *victim = pager->get();
                 // the frame is not free
-                if (victim->process != -1) {
-                    cout << " UNMAP " << victim->process << ":" << victim->virtual_page << endl;
-                    Pte *pte_victim = &processes.at(victim->process).page_table[victim->virtual_page];
+                if (pager->frame_table.find(victim) != pager->frame_table.end()) {
+//                    Process *vp = &processes.at(victim->number);
+//                    Pte *pte_victim = pager->frame_table[victim->number].first;
+                    pte_victim = pager->frame_table[victim].first;
+                    vp = pager->frame_table[victim].second;
+//                    cout << " UNMAP " << pte_victim->process << ":" << pte_victim->virtual_page << endl;
+                    cout << " UNMAP " << vp->pid << ":" << pte_victim->virtual_page << endl;
+//                    Pte *pte_victim = &vp->page_table[victim->virtual_page];
+                    vp->pstat.unmaps++;
+                    pte_victim->valid = 0;
                     // page out if modified
                     if (pte_victim->modified == 1) {
-                        if (pte_victim->file_map == 1)
+                        if (pte_victim->file_map == 1) {
                             cout << " FOUT" << endl;
-                        else
+                            vp->pstat.fouts++;
+                        } else {
                             cout << " OUT" << endl;
+                            vp->pstat.outs++;
+                        }
                         pte_victim->page_out = 1;
                     }
                     pte_victim->reset();
                 }
                 // decide the content of current pte
-                if (cpte->file_map)
+                if (cpte->file_map) {
                     cout << " FIN" << endl;
-                else if (cpte->page_out)
+                    cp->pstat.fins++;
+                } else if (cpte->page_out) {
                     cout << " IN" << endl;
-                else
+                    cp->pstat.ins++;
+                } else {
                     cout << " ZERO" << endl;
+                    cp->pstat.zeros++;
+                }
                 // map
                 cout << " MAP " << victim->number << endl;
-                // reset frame
-                victim->process = cp->pid;
-                victim->virtual_page = ins->location;
-                victim->referenced = 0;
-                victim->modified = 0;
+                cp->pstat.maps++;
+                // reset frame table
+                pager->frame_table[victim] = make_pair(cpte, cp);
                 // reset current pte
                 cpte->frame = victim->number;
                 cpte->valid = 1;
             }
-        }
-        // reset current pte
-        if (ins->type == w)
-            if (cpte->write_protect == 0) {
-                cpte->modified = 1;
-                if (page_tye != Nru)
-                    pager->frames.at(cpte->frame).referenced = 1;
-            } else {
-                if (page_tye != Nru)
-                    pager->frames.at(cpte->frame).referenced = 1;
-                cout << " SEGPROT" << endl;
+            // reset current pte
+            if (ins->type == w)
+                if (cpte->write_protect == 0) {
+                    cpte->modified = 1;
+                    if (page_tye != Nru)
+                        cpte->referenced = 1;
+//                    pager->frames.at(cpte->frame).referenced = 1;
+                } else {
+                    if (page_tye != Nru)
+                        cpte->referenced = 1;
+//                    pager->frames.at(cpte->frame).referenced = 1;
+                    cout << " SEGPROT" << endl;
+                    cp->pstat.segprot++;
+                }
+            else if (ins->type == r) {
+                cpte->referenced = 1;
+//            pager->frames.at(cpte->frame).referenced = 1;
             }
-        else if (ins->type == r) {
-            cpte->referenced = 1;
-            pager->frames.at(cpte->frame).referenced = 1;
+            instructions.pop_front();
+            counter++;
         }
-        instructions.pop_front();
-        counter++;
     }
+
+    // print out per process info
+    for (auto &p: processes) {
+        cout << "PT[" << p.pid << "]: ";
+        for (int i = 0; i < 64; ++i) {
+            if (p.legal(i)) {
+                cpte = &(p.page_table[i]);
+                if (cpte->valid) {
+                    cout << i << ":";
+                    if (cpte->referenced)
+                        cout << "R";
+                    else
+                        cout << "-";
+                    if (cpte->modified)
+                        cout << "M";
+                    else
+                        cout << "-";
+                    if (cpte->page_out)
+                        cout << "S";
+                    else
+                        cout << "-";
+                } else {
+                    if (cpte->page_out)
+                        cout << "#";
+                    else
+                        cout << "*";
+                }
+            } else
+                cout << "*";
+            cout << " ";
+        }
+        cout << endl;
+    }
+
+    // print the frame information
+    cout << "FT: ";
+    for (auto it = pager->frames.begin(); it != pager->frames.end(); it++) {
+        Frame *f = &(*it);
+        if (pager->frame_table.find(f) == pager->frame_table.end())
+            cout << "* ";
+        else
+            cout << pager->frame_table[f].second->pid << ":" << pager->frame_table[f].first->virtual_page << " ";
+    }
+    cout << endl;
+
+    // print the process statistics
+    long long int cost = 0;
+    for (auto &p:processes) {
+        p.pstat.print(p.pid);
+        cost += p.pstat.calculate();
+    }
+
+    // print overall statistics
+    cost += ctx_switches * 120 + counter;
+    printf("TOTALCOST %lu %lu %llu\n", ctx_switches, counter, cost);
 }
+

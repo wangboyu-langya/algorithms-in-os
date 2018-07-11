@@ -11,10 +11,11 @@
 using namespace std;
 class Process {
 public:
-    Process(int p);
-
-    std::unordered_map<int, Pte> page_table;
     int pid;
+    Pstat pstat;
+    std::unordered_map<int, Pte> page_table;
+
+    Process(int p);
 
     // init pte for the given address
     void insert(int lb, int ub, int protect, int file_map);

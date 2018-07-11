@@ -8,6 +8,8 @@
 
 #include <list>
 #include "utils.h"
+#include "Process.h"
+#include <unordered_map>
 
 using namespace std;
 
@@ -15,6 +17,8 @@ class Pager {
 public:
     int frame_number = 0;
     vector<Frame> frames;
+//    unordered_map<Frame*, Pte*> frame_table;
+    unordered_map<Frame*, pair<Pte*, Process*>> frame_table;
     list<Frame *> free;
     list<Frame *> occupied;
 

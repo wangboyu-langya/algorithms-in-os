@@ -36,13 +36,14 @@ Frame *Pager_sec::get() {
         occupied.push_back(f);
     } else {
         for (auto it = occupied.begin(); it != occupied.end();) {
-            if ((*it)->referenced == 0) {
+            Pte* pte = frame_table[*it].first;
+            if (pte->referenced == 0) {
                 f = *it;
                 occupied.push_back(*it);
                 it = occupied.erase(it);
                 break;
             } else {
-                (*it)->referenced = 0;
+                pte->referenced = 0;
                 occupied.push_back(*it);
                 it = occupied.erase(it);
             }
