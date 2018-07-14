@@ -157,6 +157,15 @@ void init(int argc, char *argv[]) {
         case Random:
             pager = new Pager_random(frame_number);
             break;
+        case Nru:
+            pager = new Pager_nru(frame_number);
+            break;
+        case Clock:
+            pager = (Pager *) new Pager_clock(frame_number);
+            break;
+        case Aging:
+            pager = new Pager_aging(frame_number);
+            break;
     }
 }
 
@@ -178,6 +187,8 @@ int main(int argc, char *argv[]) {
             instructions.pop_front();
             counter++;
             ctx_switches++;
+            if (if_verbose)
+                cout << endl;
             continue;
         } else {
             // the only difference between r and w is the modified bit
@@ -207,19 +218,29 @@ int main(int argc, char *argv[]) {
 
             // if the virtual page is valid, do nothing
             // else find the vitim
-            if (counter == 42)
+            if (counter == 45)
                 cout << "stop" << endl;
             if (!cpte->valid) {
+                // init the age table when the free frames are used up
+                if (page_tye == Aging)
+                    if (pager->free.empty())
+                        if (pager->age_table.empty())
+                            for (auto &p:processes)
+//                         TODO: Be aware, this will reset the reference bit
+                                pager->give_birth(p.page_table);
+                // recalculate the age
+//                    if (page_tye == Aging) {
+//                        pager->grow();
+//                    }
+
                 Frame *victim = pager->get();
                 // the frame is not free
                 if (pager->frame_table.find(victim) != pager->frame_table.end()) {
-//                    Process *vp = &processes.at(victim->number);
-//                    Pte *pte_victim = pager->frame_table[victim->number].first;
+                    if (if_verbose)
+                        pager->print_age();
                     pte_victim = pager->frame_table[victim].first;
                     vp = pager->frame_table[victim].second;
-//                    cout << " UNMAP " << pte_victim->process << ":" << pte_victim->virtual_page << endl;
                     cout << " UNMAP " << vp->pid << ":" << pte_victim->virtual_page << endl;
-//                    Pte *pte_victim = &vp->page_table[victim->virtual_page];
                     vp->pstat.unmaps++;
                     pte_victim->valid = 0;
                     // page out if modified
@@ -229,11 +250,13 @@ int main(int argc, char *argv[]) {
                             vp->pstat.fouts++;
                         } else {
                             cout << " OUT" << endl;
+                            pte_victim->page_out = 1;
                             vp->pstat.outs++;
                         }
-                        pte_victim->page_out = 1;
                     }
                     pte_victim->reset();
+//                    cpte->referenced = 1;
+
                 }
                 // decide the content of current pte
                 if (cpte->file_map) {
@@ -256,25 +279,18 @@ int main(int argc, char *argv[]) {
                 cpte->valid = 1;
             }
             // reset current pte
+            cpte->referenced = 1;
             if (ins->type == w)
                 if (cpte->write_protect == 0) {
                     cpte->modified = 1;
-                    if (page_tye != Nru)
-                        cpte->referenced = 1;
-//                    pager->frames.at(cpte->frame).referenced = 1;
                 } else {
-                    if (page_tye != Nru)
-                        cpte->referenced = 1;
-//                    pager->frames.at(cpte->frame).referenced = 1;
                     cout << " SEGPROT" << endl;
                     cp->pstat.segprot++;
                 }
-            else if (ins->type == r) {
-                cpte->referenced = 1;
-//            pager->frames.at(cpte->frame).referenced = 1;
-            }
             instructions.pop_front();
             counter++;
+            if (if_verbose)
+                cout << endl;
         }
     }
 
@@ -332,5 +348,6 @@ int main(int argc, char *argv[]) {
     // print overall statistics
     cost += ctx_switches * 120 + counter;
     printf("TOTALCOST %lu %lu %llu\n", ctx_switches, counter, cost);
+    delete pager;
 }
 

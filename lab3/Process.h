@@ -22,6 +22,7 @@ public:
 
     // if a given virtual page is legal
     bool legal(int i);
+
 };
 
 

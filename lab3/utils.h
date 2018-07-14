@@ -10,6 +10,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <math.h>
 
 using namespace std;
 // enum type
@@ -47,12 +48,21 @@ struct Instruction {
     Instruction(Ins t, int v);
 };
 
+struct Age {
+    unsigned int age:32;
+    unsigned int eldest:32;
+
+    Age() = default;
+    explicit Age(int birth);
+
+    void grow(int year);
+
+    friend bool operator<(Age& a, Age& b);
+};
+
+
 struct Frame {
     int number;
-    int process = -1;
-    int virtual_page = 0;
-    int referenced = 0;
-    int modified = 0;
     Frame(int n);;
 };
 
@@ -71,6 +81,7 @@ struct Pstat {
 
     long int calculate();
 };
+
 
 // load a random number file
 void load_rand(string &rand_name);

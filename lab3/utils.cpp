@@ -74,6 +74,22 @@ void Pstat::print(int p) {
 }
 
 long int Pstat::calculate() {
-    return  (unmaps + maps) * 400 + (ins + outs) * 3000 + (fins + fouts) * 2500 + zeros * 150 + segv * 240 +
+    return (unmaps + maps) * 400 + (ins + outs) * 3000 + (fins + fouts) * 2500 + zeros * 150 + segv * 240 +
            segprot * 300;
+}
+
+Age::Age(int birth) {
+    eldest = static_cast<unsigned int> (pow(2, 31));
+    age = birth;
+}
+
+void Age::grow(int year) {
+    if (year == 1)
+        age = eldest + (age >> 1);
+    else
+        age = age >> 1;
+}
+
+bool operator<(Age &a, Age &b) {
+    return a.age < b.age;
 }
