@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <list>
+#include <getopt.h>
 #include "utils.h"
 #include "Process.h"
 #include "Pager.h"
@@ -41,10 +42,22 @@ void init(int argc, char *argv[]) {
     }
     if (argc == 7)
         if_verbose = true;
+    int flag;
     string input_name, rand_name, num_frames, pager_name;
-    pager_name = argv[1];
-    num_frames = argv[3];
-    frame_number = stoi(num_frames.substr(2, string::npos));
+    while ((flag = getopt(argc, argv, "af:")))
+    switch (flag)
+    {
+        case 'a':
+            pager_name = optarg;
+            break;
+        case 'f':
+            num_frames = optarg;
+            break;
+    }
+//    pager_name = argv[1];
+//    num_frames = argv[3];
+//    frame_number = stoi(num_frames.substr(2, string::npos));
+    frame_number = stoi(num_frames);
     input_name = argv[4];
     rand_name = argv[5];
     unordered_map<char, Pge> type_map{
