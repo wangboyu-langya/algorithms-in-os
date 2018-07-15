@@ -11,7 +11,7 @@ ALGOS="f s r n c a"
 
 for I in ${INPUTS}; do
    for A in ${ALGOS}; do 
-      for F in 16 32; do  
+      for F in 16 32 64 128; do  
 	OUTF="${OUTDIR}/out${I}_${F}_${A}"
 #	echo "${PROG} -f${F} -a${A} ${PARGS} ${INDIR}/in${I} ${INDIR}/rfile > ${OUTF}"
 	${PROG} -f${F} -a${A} ${PARGS} ${INDIR}/in${I} ${INDIR}/rfile > ${OUTF}

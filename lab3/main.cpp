@@ -42,20 +42,19 @@ void init(int argc, char *argv[]) {
     if (argc == 7)
         if_verbose = true;
     string input_name, rand_name, num_frames, pager_name;
-//    int flag;
-//    while ((flag = getopt(argc, argv, "a:f:")))
-//        switch (flag) {
-//            case 'a':
-//                pager_name = optarg;
-//                break;
-//            case 'f':
-//                num_frames = optarg;
-//                break;
-//        }
-//    pager_name = argv[1];
-//    num_frames = argv[3];
-    pager_name = argv[2];
-    num_frames = argv[1];
+    for (int i = 1; i < argc; ++i) {
+        string tmp = argv[i];
+        if (tmp[0] == '-')
+            switch (tmp[1]) {
+                case 'a':
+                    pager_name = argv[i];
+                    break;
+                case 'f':
+                    num_frames = argv[i];
+                    break;
+            }
+    }
+//    num_frames = argv[1];
     frame_number = stoi(num_frames.substr(2, string::npos));
 //    frame_number = stoi(num_frames);
     input_name = argv[4];
