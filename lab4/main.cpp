@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     std::list<Request>::iterator it = requests.begin();
     // as long as the task is not over
     while (!(it == requests.end() && scheduler->idle())) {
-        if (time == 109)
+        if (time == 109 && if_debug)
             cout << "Stop" << endl;
         // add a new request to the ready state
         if (it != requests.end()) {
@@ -108,11 +108,14 @@ int main(int argc, char *argv[]) {
             // pop a finished request
             if (scheduler->processing.front()->finish == time) {
                 Request *req = scheduler->processing.front();
-                printf("%5d: %5d %5d %5d %5d\n", scheduler->io_times++, req->track, req->arrival, req->start, req->finish);
+                if (if_debug)
+                    printf("%5d: %5d %5d %5d %5d\n", scheduler->io_times++, req->track, req->arrival, req->start,
+                           req->finish);
                 // reset the head
                 scheduler->processing.pop_front();
                 scheduler->head_moves += abs(req->track - scheduler->head);
                 scheduler->head = req->track;
+                scheduler->io_times++;
             }
         }
         if (scheduler->idle())
@@ -126,12 +129,11 @@ int main(int argc, char *argv[]) {
             time++;
     }
     for (auto it = requests.begin(); it != requests.end(); it++) {
-        if (if_debug)
-            printf("%5d: %5d %5d %5d\n", it->id, it->arrival, it->start, it->finish);
+        printf("%5d: %5d %5d %5d\n", it->id, it->arrival, it->start, it->finish);
     }
     // do the statistics
-    float avg_turnaround = 0;
-    float avg_waittime = 0;
+    double avg_turnaround = 0;
+    double avg_waittime = 0;
     int max_waittime = 0;
     for (it = requests.begin(); it != requests.end(); it++) {
         avg_turnaround += it->finish - it->submit;

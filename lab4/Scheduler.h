@@ -20,7 +20,7 @@ public:
     list<Request *> processing;
     int head = 0; // where the head is, start at 0
     int head_moves = 0;
-    int io_times = 0;
+    int io_times = 0.0;
 
     Scheduler() = default;
 
