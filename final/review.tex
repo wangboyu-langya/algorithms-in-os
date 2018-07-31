@@ -1,0 +1,123 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{listings}
+\usepackage{xcolor}
+% \usepackage{minted}
+\usepackage{sectsty}
+\usepackage{pdfpages}
+\chapterfont{\centering}
+\sectionfont{\centering}
+\usepackage{luatexja-fontspec}
+\usepackage{fontspec}
+% \setCJKmainfont[BoldFont={NotoSerifCJKsc-Bold.otf}]{NotoSerifCJKsc-Regular.otf}
+\setmainjfont[BoldFont={NotoSerifCJKsc-Bold.otf}, ItalicFont={simkai.ttc}]{NotoSerifCJKsc-Regular.otf}
+\usepackage{amsmath,amssymb}
+\usepackage{amsthm}
+\usepackage{upgreek}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage[justification=centering]{caption}
+\usepackage{subcaption}
+\usepackage{indentfirst} 
+\linespread{1.5}
+\setlength{\parindent}{2em}
+\usepackage[]{cite}
+\usepackage{pdfsync}
+\def\andname{\hspace*{-0.5em}}
+\usepackage[
+    colorlinks,
+    linkcolor=blue,
+    anchorcolor=yellow,
+    citecolor=red,
+    bookmarks=true
+    bookmarkopen
+    ] {hyperref}
+
+\definecolor{mGreen}{rgb}{0,0.6,0}
+\definecolor{mGray}{rgb}{0.5,0.5,0.5}
+\definecolor{mPurple}{rgb}{0.58,0,0.82}
+\definecolor{backgroundColour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{CStyle}{
+    backgroundcolor=\color{backgroundColour},   
+    commentstyle=\color{mGreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{mGray},
+    stringstyle=\color{mPurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C
+}
+
+
+\title{Operating System Review}
+\author{\textit{胡祥龙}(Xianglong Hu)}
+\date{07/29/2018}
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{2.3 Interprocess Communication}
+\begin{description}
+\item[race conditions]{121} 
+\item[critical regions]{121}
+  \begin{description}
+  \item[disable interrupts] {too much privilege, cannot be applied to multicore processors.} 
+  \item[lock variables] {race is still there.} 
+  \item[busy waiting] {the lock is called the spin lock, 但是Process A会在
+      Process B不在critical region的时候等待，导致浪费了时间。
+      \begin{lstlisting}[style=CStyle]
+          while (TRUE) { 
+          while (turn != 0) / * loop * / ;
+          critical region();
+          turn = 1; 
+          noncritical region();
+          }
+          while (TRUE) { 
+          while (turn != 1) / * loop * / ;
+          critical region();
+          turn = 0; 
+          noncritical region();
+          }
+      \end{lstlisting}
+    } 
+  \item[Peterson's solution] {这个不错，但是似乎只能用于\textit{两个}Processes?
+      \begin{lstlisting}[style=CStyle]
+          #define FALSE 0
+          #define TRUE 1
+          #define N 2 / * number of processes * /
+          int turn; / * whose turn is it? * /
+          int interested[N]; / * all values initially 0 (FALSE) * /
+          void enter region(int process); / * process is 0 or 1 * /
+          {
+          int other; / * number of the other process * /
+          other = 1 − process; / * the opposite of process * /
+          interested[process] = TRUE; / * show that you are interested * /
+          tur n = process; / * set flag * /
+          while (turn == process && interested[other] == TRUE) / * null statement * / ;
+          }
+          void leave region(int process) / * process: who is leaving * /
+          {
+          interested[process] = FALSE; / * indicate departure from critical region * /
+          }
+        \end{lstlisting}
+    } 
+  \end{description}
+\end{description}
+
+\nocite{*}
+% \bibliography{report}{}
+% \bibliographystyle{plain}
+\end{document}

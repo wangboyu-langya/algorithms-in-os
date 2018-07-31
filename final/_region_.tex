@@ -1,0 +1,55 @@
+\message{ !name(review.tex)}%%% Local Variables:
+%%% TeX-command: "lualatex -shell-escape"
+%%% End:
+% !TEX encoding = UTF-8 Unicode
+%!TEX lualatex = <lualatex>
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{listing}
+\usepackage{sectsty}
+\usepackage{pdfpages}
+\chapterfont{\centering}
+\sectionfont{\centering}
+\usepackage{luatexja-fontspec}
+\usepackage{fontspec}
+% \setCJKmainfont[BoldFont={NotoSerifCJKsc-Bold.otf}]{NotoSerifCJKsc-Regular.otf}
+\setmainjfont[BoldFont={NotoSerifCJKsc-Bold.otf}, ItalicFont={simkai.ttc}]{NotoSerifCJKsc-Regular.otf}
+\usepackage{amsmath,amssymb}
+\usepackage{amsthm}
+\usepackage{upgreek}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage[justification=centering]{caption}
+\usepackage{subcaption}
+\usepackage{indentfirst} 
+\linespread{1.5}
+\setlength{\parindent}{2em}
+\usepackage[]{cite}
+\usepackage{pdfsync}
+\def\andname{\hspace*{-0.5em}}
+\usepackage[
+    colorlinks,
+    linkcolor=blue,
+    anchorcolor=yellow,
+    citecolor=red,
+    bookmarks=true
+    bookmarkopen
+    ] {hyperref}
+
+\title{Operating System Review}
+\author{\textit{胡祥龙}(Xianglong Hu)}
+\date{07/29/2018}
+\begin{document}
+
+\message{ !name(review.tex) !offset(-3) }
+
+\maketitle
+\tableofcontents
+\newpage
+
+
+\message{ !name(review.tex) !offset(26) }
+
+\end{document}

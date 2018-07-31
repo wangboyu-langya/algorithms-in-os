@@ -1,0 +1,25 @@
+different locks, pipes, four labs
+
+memory management
+physical management, page table, NIU
+
+pseudo code
+
+io
+types of iom scheduling, io schedulers, don't do scheduling anymore, ssd
+
+file system
+inodes, three lists, superblocks, 
+
+networking
+encapsulation, ip, udp
+
+suggestion:
+don't go to details, the notions
+principles
+everything is a frame
+
+55 100
+27 79
+40 81
+
