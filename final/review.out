@@ -1,1 +1,45 @@
 \BOOKMARK [1][-]{section.1}{2.3 Interprocess Communication}{}% 1
+\BOOKMARK [2][-]{subsection.1.1}{race conditions}{section.1}% 2
+\BOOKMARK [2][-]{subsection.1.2}{critical regions}{section.1}% 3
+\BOOKMARK [2][-]{subsection.1.3}{disable interrupts}{section.1}% 4
+\BOOKMARK [2][-]{subsection.1.4}{lock variables}{section.1}% 5
+\BOOKMARK [2][-]{subsection.1.5}{busy waiting}{section.1}% 6
+\BOOKMARK [2][-]{subsection.1.6}{Peterson's solution}{section.1}% 7
+\BOOKMARK [2][-]{subsection.1.7}{TSL\(Test and Set Lock\) and XCHG}{section.1}% 8
+\BOOKMARK [2][-]{subsection.1.8}{busy waiting的问题: priority inversion}{section.1}% 9
+\BOOKMARK [2][-]{subsection.1.9}{The Producer-Consumer Problem}{section.1}% 10
+\BOOKMARK [2][-]{subsection.1.10}{semaphore}{section.1}% 11
+\BOOKMARK [2][-]{subsection.1.11}{mutex}{section.1}% 12
+\BOOKMARK [2][-]{subsection.1.12}{Monitors and Deadlocks}{section.1}% 13
+\BOOKMARK [2][-]{subsection.1.13}{Message Passing}{section.1}% 14
+\BOOKMARK [2][-]{subsection.1.14}{Barriers}{section.1}% 15
+\BOOKMARK [1][-]{section.2}{6. Deadlocks}{}% 16
+\BOOKMARK [2][-]{subsection.2.1}{Deadlock Detection}{section.2}% 17
+\BOOKMARK [2][-]{subsection.2.2}{Deadlock Avoidance}{section.2}% 18
+\BOOKMARK [3][-]{subsubsection.2.2.1}{Safe State}{subsection.2.2}% 19
+\BOOKMARK [2][-]{subsection.2.3}{Banker's Algorithm}{section.2}% 20
+\BOOKMARK [2][-]{subsection.2.4}{Deadlock Prevention}{section.2}% 21
+\BOOKMARK [1][-]{section.3}{2.1 \046 2.2 Processes and Threads}{}% 22
+\BOOKMARK [2][-]{subsection.3.1}{Implemention of Thread}{section.3}% 23
+\BOOKMARK [2][-]{subsection.3.2}{State Model}{section.3}% 24
+\BOOKMARK [3][-]{subsubsection.3.2.1}{Three State Model}{subsection.3.2}% 25
+\BOOKMARK [3][-]{subsubsection.3.2.2}{Five State Model}{subsection.3.2}% 26
+\BOOKMARK [2][-]{subsection.3.3}{Simple Model of Multiprogramming}{section.3}% 27
+\BOOKMARK [1][-]{section.4}{File Systems}{}% 28
+\BOOKMARK [2][-]{subsection.4.1}{Implementation}{section.4}% 29
+\BOOKMARK [3][-]{subsubsection.4.1.1}{Layout}{subsection.4.1}% 30
+\BOOKMARK [3][-]{subsubsection.4.1.2}{Implementing Files: Allocation}{subsection.4.1}% 31
+\BOOKMARK [3][-]{subsubsection.4.1.3}{I-node}{subsection.4.1}% 32
+\BOOKMARK [2][-]{subsection.4.2}{Implementing Directories}{section.4}% 33
+\BOOKMARK [3][-]{subsubsection.4.2.1}{Shared Files}{subsection.4.2}% 34
+\BOOKMARK [3][-]{subsubsection.4.2.2}{Log-structured and journaling}{subsection.4.2}% 35
+\BOOKMARK [2][-]{subsection.4.3}{Management and Optimization}{section.4}% 36
+\BOOKMARK [3][-]{subsubsection.4.3.1}{Backup}{subsection.4.3}% 37
+\BOOKMARK [1][-]{section.5}{Memory Management}{}% 38
+\BOOKMARK [2][-]{subsection.5.1}{Swapping}{section.5}% 39
+\BOOKMARK [2][-]{subsection.5.2}{Virtual Memory}{section.5}% 40
+\BOOKMARK [2][-]{subsection.5.3}{Lab 03}{section.5}% 41
+\BOOKMARK [3][-]{subsubsection.5.3.1}{Replacement Algorithm}{subsection.5.3}% 42
+\BOOKMARK [2][-]{subsection.5.4}{Working Set Problem}{section.5}% 43
+\BOOKMARK [2][-]{subsection.5.5}{Design Issues}{section.5}% 44
+\BOOKMARK [1][-]{section.6}{Scheduling}{}% 45

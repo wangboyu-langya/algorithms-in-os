@@ -606,6 +606,117 @@ directories
 directories found there and have
 changed since some given base date.
 \end{qutoe}
+
+\section{Memory Management}
+前面主要是说memory abstraction是必要的，这个先不管。
+
+\subsection{Swapping}
+Base and Limit are two special hardware registers. 当这两个被使用的时候，程序会
+被加载进连续的memory space。
+
+Memory Space不够用的时候就把部分Program拿出来放到disk上，之后再bring in，这个过
+程就叫做swapping。这个过程之中会产生swapping hole可以通过memory compaction完成。
+
+空闲空间的管理是用bitmap或者linked list。Bitmap有点慢，必须要寻找合适的大小。
+linked list的每个entry都要记录起始点，长度，以及上一个和下一个entry。
+
+\emphasis{重点来了，}有好几个allocate的策略。
+\begin{itemize}
+\item{first fit, 永远总开头开始找，第一个} 
+\item{next fit, 这个和first fit比较像，区别是每次是从上次找到的位置开始而不是每
+    次都从开头。} 
+\item{best fit，找遍整个list， 找到最小的满足条件的那个} 
+\item{worst fit, 找最大的那个。} 
+\end{itemize}
+
+\subsection{Virtual Memory}
+\begin{description}
+\item[Motivation:] It is not necessary that all of the pieces of a
+process be in main memory during execution. 
+\item[Definition:] Mapping from logical (virtual) address
+\end{description}
+
+\subsection{Lab 03}
+
+\emphasis{这里是结合lab来讲的。}每个process有自己的address space，最小单位是page，CPU通过MMU（一个模块）将
+virtual address翻译成physical address。
+
+PTE（Page Table Entry)，是每个page都有的，记录了referenced，modified，present，
+protection等信息。得到PTE之后如果valid，就直接读取。否则的话就用算法选出一个PTE，
+使之无效并使用之。
+
+TLB(Translation Lookaside Buffer)是在MMU里的一个硬件，他可以绕过PTE，直接把page
+翻译成Physical frame。
+
+For large memory来说，要么使用multilevel page table, 要么使用inverted Page Table。
+Inverted Page Table就是每一个frame纪录一个PTE，纪录virtual page的位置。缺点是查
+找太慢。
+
+\subsubsection{Replacement Algorithm}
+\emphasis{重中之重。是把正在正在内存里的Pte占用的frame挑选。}其中LRU实现的成本比
+较高，因为每个page都要记录下使用的时间，一般是想办法模拟。
+\begin{description}
+\item[NRU(Not Recently Used)]{分成四类，referenced周期性清空，在最低的一类中随机挑选一个扔掉。} 
+\item[FIFO(First in First Out)]{too trivial to talk about.} 
+\item[Second Chance]{Modification to fifo, 仍然按照时间顺序检查，不过只要R=1，清
+    空R，并视作年龄最新，检查下一个。} 
+\item[Clock]{本质上和second chance是一个算法，只不过实现上更巧妙罢了。} 
+\item[LRU(Least Frequently Used)]{一般可以在硬件层面上实现，实现算法挺有趣的。其
+    他就是每个pte里有一个field记录时间。} 
+\item[Aging]{这个其实挺有趣的，不过也没什么特别的。就是用一列向量记录时间罢了。} 
+\end{description}
+
+\subsection{Working Set Problem}
+其实就是决定working set的问题。load process的时候是没有内存的，如果不提前load一
+些内存的话，那么就会一直page fault，这个现象称之为thrashing。我们希望prepaging。
+所以要决定working set。
+
+有两种算法，一种就很basic，就是不不停的track最近使用的page。另外一种称之为
+WSClock，其实就是Clock算法的改良，唯一的区别就是纪录了时间的信息，而这个时间也是
+虚拟的，称之为virtual current time, 是程序实际的运行时间。
+
+\subsection{Design Issues}
+还有对global algorithm与local algorithm的讨论，就是replacement是在process的层面
+进行与否。global显然更好，local的话每个process的配额可以通过page fault frequency
+动态的调整。
+
+还有就是对page size大小的讨论，都一样。大了浪费内存空间（internal fragmentation），
+小了浪费TLB的空间以及page table。因为读写速度doesn't matter here。
+
+所谓的loadcontrol：
+
+ What if PFF indicates that some
+processes need more memory but none
+need less?
+Swap some processes to disk and free
+up all the pages they are holding.
+
+还要注意locking pages in memory when doing I/O.
+
+另外swapping when page out.这个称之为backing store。
+
+\problem{这东西怎么考啊，感觉还是要看看代码。}
+
+\section{Scheduling}
+不同种类的操作系统有不同的算法。主要有三种：Batch System， Interactive System，
+Real-time System。
+
+lab里需要实现以下几种算法：
+\begin{description}
+\item[FCFS(First Come First Serve)]{按照先后顺序，最为trivial。} 
+\item[LCFS(Last Come First Serve)]{按照先后顺序，也很trivial。} 
+\item[SJF(Shortest Job First)]{剩余时间最短的。} 
+\item[RR(Round Robin)]{剩余时间最短的, promote fairness。} 
+\item[PRIO(Priority)]{将不同的Process分级，内部仍然是RR。} 
+\end{description}
+
+书上还提到了几种额外的:
+\begin{description}
+\item[lottery]{随机分配，几率根据ticket的比例决定。} 
+\item[fair share]{主要是多用户的时候每个用户给予一定的配额。} 
+\end{description}
+Batch System没有用户交互，因为希望尽可能快的完成任务。比
+如FIFO，SJF。
 \nocite{*}
 % \bibliography{report}{}
 % \bibliographystyle{plain}
